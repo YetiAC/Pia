@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Partido de Ciencias</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: one-column "cancha" — sticky scoreboard on top, one screen (jugada) at a time, big tap targets for phone */
+:root{
+  --bg:#edf1f7; --surface:#ffffff; --surface-2:#f5f7fb; --ink:#15213b; --muted:#56627a; --line:#d5dce8;
+  --ball:#e2611b; --ball-ink:#b9480b; --ball-soft:#fde7d8; --navy:#15213b; --navy-ink:#ffffff;
+  --good:#18864a; --good-soft:#dcf3e5; --bad:#c93838; --bad-soft:#fbe1e1; --tip:#fff4c2; --tip-ink:#5a4600;
+  --f-display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1322; --surface:#151f36; --surface-2:#1b2742; --ink:#edf1fa; --muted:#a2aec6; --line:#2a3757;
+  --ball:#ff8740; --ball-ink:#ffa46e; --ball-soft:#3a2416; --navy:#060b16; --navy-ink:#edf1fa;
+  --good:#43d083; --good-soft:#123323; --bad:#ff7a7a; --bad-soft:#3a1717; --tip:#3a3410; --tip-ink:#ffe680; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1322; --surface:#151f36; --surface-2:#1b2742; --ink:#edf1fa; --muted:#a2aec6; --line:#2a3757;
+  --ball:#ff8740; --ball-ink:#ffa46e; --ball-soft:#3a2416; --navy:#060b16; --navy-ink:#edf1fa;
+  --good:#43d083; --good-soft:#123323; --bad:#ff7a7a; --bad-soft:#3a1717; --tip:#3a3410; --tip-ink:#ffe680; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5;font-weight:500}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;line-height:1.1;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
+
+/* Marcador */
+.board{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--navy);color:var(--navy-ink);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+.board-in{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.board .who{font-family:var(--f-display);font-size:18px;letter-spacing:.04em;flex:1;min-width:0}
+.board .who small{display:block;font-family:var(--f-body);font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.7;font-weight:800}
+.score{font-family:var(--f-display);font-size:30px;background:#000;color:#ffb347;border-radius:8px;padding:2px 12px;min-width:72px;text-align:center;font-variant-numeric:tabular-nums;border:2px solid #2b3550}
+.score small{display:block;font-family:var(--f-body);font-size:9px;letter-spacing:.14em;color:#c6cde0;font-weight:800;margin-top:-4px}
+.score.bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.18)}}
+.dots{max-width:680px;margin:8px auto 0;display:flex;gap:6px}
+.dot{flex:1;height:30px;border-radius:6px;border:0;background:#24304d;color:#c6cde0;font-size:12px;font-weight:800}
+.dot.on{background:var(--ball);color:#fff}
+.dot.done{background:#2f6e4e;color:#fff}
+
+main{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--ball-ink)}
+.hero h1{font-size:clamp(34px,9vw,48px);color:var(--ink)}
+.hero p{color:var(--muted);margin-top:8px}
+.lead{font-size:18px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:22px}
+.card ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.big{font-family:var(--f-display);font-size:22px;color:var(--ball-ink)}
+.ex{background:var(--surface-2);border-left:4px solid var(--ball);border-radius:6px;padding:10px 12px;font-style:italic}
+.tip{background:var(--tip);color:var(--tip-ink);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.tip b:first-child{font-family:var(--f-display);font-weight:400;font-size:18px;letter-spacing:.02em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2>div{background:var(--surface-2);border-radius:10px;padding:10px;min-width:0}
+.grid2 b{display:block;font-family:var(--f-display);font-weight:400;font-size:18px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--ball-soft);color:var(--ink);border-radius:999px;padding:3px 10px;font-weight:700;font-size:15px}
+.ref{font-family:ui-monospace,Menlo,monospace;font-size:14px;background:var(--surface-2);border-radius:8px;padding:10px;overflow-x:auto}
+
+.menu{display:flex;flex-direction:column;gap:10px}
+.play{display:flex;align-items:center;gap:14px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.play .n{width:44px;height:44px;flex:none;border-radius:50%;background:var(--ball);color:#fff;font-family:var(--f-display);font-size:22px;display:grid;place-items:center;
+  background-image:linear-gradient(transparent 47%,rgba(0,0,0,.35) 47% 53%,transparent 53%),linear-gradient(90deg,transparent 47%,rgba(0,0,0,.35) 47% 53%,transparent 53%)}
+.play .t{flex:1;min-width:0}
+.play .t b{display:block;font-size:18px}
+.play .t span{color:var(--muted);font-size:14px}
+.play.final{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+.play.final .t span{color:#c6cde0}
+.play .ok{color:var(--good);font-weight:800;font-size:14px}
+
+.section-h{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+.section-h h2{font-size:26px}
+.section-h span{color:var(--muted);font-size:14px}
+
+/* Preguntas */
+.q{background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.q .qt{font-weight:800;font-size:18px}
+.q .qn{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-weight:700;min-height:48px}
+.opt.sel{border-color:var(--ball);background:var(--ball-soft)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt[disabled]{cursor:default}
+.slots{display:flex;flex-direction:column;gap:6px;min-height:20px}
+.slot{display:flex;gap:10px;align-items:center;background:var(--ball-soft);border-radius:10px;padding:8px 12px;font-weight:700;border:0;text-align:left}
+.slot i{font-style:normal;font-family:var(--f-display);color:var(--ball-ink);font-size:18px;width:20px}
+.hint{font-size:14px;color:var(--muted)}
+.sortrow{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--surface-2);border:2px solid transparent}
+.sortrow.right{border-color:var(--good)}
+.sortrow.wrong{border-color:var(--bad)}
+.sortrow .it{font-weight:800}
+.bk{display:flex;flex-wrap:wrap;gap:6px}
+.bk button{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-weight:700;font-size:15px;min-height:40px}
+.bk button.sel{background:var(--ball);border-color:var(--ball);color:#fff}
+input.fill{font:inherit;font-size:18px;font-weight:700;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--surface-2);color:var(--ink);width:100%}
+.btn{border:0;border-radius:12px;padding:14px 18px;font-weight:800;font-size:17px;background:var(--ball);color:#fff;min-height:50px}
+.btn.alt{background:var(--surface);color:var(--ink);border:2px solid var(--line)}
+.btn.navy{background:var(--navy);color:var(--navy-ink)}
+.btn[disabled]{opacity:.45;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row .btn{flex:1 1 160px}
+.fb{border-radius:12px;padding:12px 14px;font-weight:600}
+.fb b{font-family:var(--f-display);font-weight:400;font-size:20px;display:block}
+.fb.good{background:var(--good-soft);color:var(--ink)}
+.fb.good b{color:var(--good)}
+.fb.bad{background:var(--bad-soft);color:var(--ink)}
+.fb.bad b{color:var(--bad)}
+.q.is-right{border-color:var(--good)}
+.q.is-wrong{border-color:var(--bad)}
+
+.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress div{height:100%;background:var(--ball);transition:width .3s}
+.result-big{font-family:var(--f-display);font-size:64px;line-height:1;color:var(--ball-ink);font-variant-numeric:tabular-nums}
+.miss{border-left:4px solid var(--bad);padding:8px 12px;background:var(--surface-2);border-radius:6px;display:flex;flex-direction:column;gap:4px}
+.miss .ans{color:var(--good);font-weight:800}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* --- Ilustraciones de Ciencias --- */
+:root{--skin:#f7d2b5; --skin-line:#d9a882; --lung:#f4a6b4; --heart:#d8323a; --art:#d8323a; --vein:#2f6fd6; --trach:#bcd7f2; --pale:#f0f4fa;
+  --st1:#2a8fc4; --st2:#5aa935; --st3:#ec7f2d; --st4:#6b3fa0; --fv:#4fa64a; --cer:#f2a33a; --leg:#d9534f; --ani:#b8322f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--skin:#d9b08f; --skin-line:#a77a57; --pale:#1e2a46; --trach:#7aa6d6}}
+:root[data-theme="dark"]{--skin:#d9b08f; --skin-line:#a77a57; --pale:#1e2a46; --trach:#7aa6d6}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.fig svg{width:100%;height:auto;max-width:420px;display:block}
+.fig figcaption,.fig .cap{font-size:14px;color:var(--muted);text-align:center}
+svg .skin{fill:var(--skin);stroke:var(--skin-line);stroke-width:2}
+svg .lung{fill:var(--lung);stroke:#c0607a;stroke-width:1.5}
+svg .heart{fill:var(--heart)}
+svg .art{stroke:var(--art);fill:none;stroke-width:3;stroke-linecap:round}
+svg .vein{stroke:var(--vein);fill:none;stroke-width:3;stroke-linecap:round}
+svg .trach{fill:var(--trach);stroke:#6f93b8;stroke-width:1.5}
+svg .lbl{fill:var(--ink);font:800 15px var(--f-body)}
+svg .lbl-s{fill:var(--muted);font:700 12px var(--f-body)}
+svg .lead{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .ink{fill:var(--ink)}
+svg .air-in{fill:var(--st1);font:800 12px var(--f-body)}
+svg .air-out{fill:var(--muted);font:800 12px var(--f-body)}
+svg .pulse{fill:var(--ball)}
+svg .pulse-ring{fill:none;stroke:var(--ball);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:ring 1.2s infinite}
+@keyframes ring{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.8);opacity:0}}
+svg .ecg{fill:none;stroke:var(--heart);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+svg .seg1{fill:var(--st1)} svg .seg2{fill:var(--st2)} svg .seg3{fill:var(--st3)} svg .seg4{fill:var(--st4)}
+svg .wht{fill:#fff;font:800 13px var(--f-body)}
+svg .fv{fill:var(--fv)} svg .cer{fill:var(--cer)} svg .leg{fill:var(--leg)} svg .ani{fill:var(--ani)}
+svg .plate-rim{fill:none;stroke:var(--line);stroke-width:6}
+svg .emo{font-size:22px}
+.calc{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--ball-soft);border-radius:12px;padding:12px}
+.calc input{width:90px;font:inherit;font-size:22px;font-weight:800;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.calc output{font-family:var(--f-display);font-size:26px;color:var(--ball-ink)}
+.formula{font-family:var(--f-display);font-size:30px;text-align:center;color:var(--ink);background:var(--surface-2);border-radius:12px;padding:10px}
+.formula span{color:var(--ball-ink)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0}
+.tile .ico{font-size:40px;line-height:1.1}
+.tile b{font-size:15px}
+.tile span{font-size:13px;color:var(--muted)}
+.stage{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;background:var(--surface-2);border-radius:12px;padding:10px}
+.stage .ico{font-size:40px;line-height:1;text-align:center}
+.stage b{font-family:var(--f-display);font-weight:400;font-size:20px}
+.stage ul{margin:4px 0 0;padding-left:18px;font-size:15px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-weight:700;font-size:15px}
+.vs .y{background:var(--good-soft);border-radius:10px;padding:8px}
+.vs .n{background:var(--bad-soft);border-radius:10px;padding:8px;text-decoration:line-through;text-decoration-color:var(--bad)}
+.fix{background:var(--bad-soft);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.fix b:first-child{font-family:var(--f-display);font-weight:400;font-size:18px;color:var(--bad)}
+</style>
+</head>
+<body>
+
+<header class="board">
+  <div class="board-in">
+    <div class="who"><small>Examen de Ciencias · 5°</small>SOFÍA</div>
+    <div class="score" id="score">0<small>PUNTOS</small></div>
+  </div>
+  <nav class="dots" id="dots" aria-label="Jugadas"></nav>
+</header>
+<main id="app"></main>
+
+<script>
+/* ========== DIBUJOS ========== */
+const BODY = `
+  <g stroke-linecap="round">
+    <line x1="128" y1="118" x2="84" y2="228" stroke="var(--skin-line)" stroke-width="26"/>
+    <line x1="212" y1="118" x2="256" y2="228" stroke="var(--skin-line)" stroke-width="26"/>
+    <line x1="151" y1="240" x2="147" y2="350" stroke="var(--skin-line)" stroke-width="28"/>
+    <line x1="189" y1="240" x2="193" y2="350" stroke="var(--skin-line)" stroke-width="28"/>
+    <line x1="128" y1="118" x2="84" y2="228" stroke="var(--skin)" stroke-width="22"/>
+    <line x1="212" y1="118" x2="256" y2="228" stroke="var(--skin)" stroke-width="22"/>
+    <line x1="151" y1="240" x2="147" y2="350" stroke="var(--skin)" stroke-width="24"/>
+    <line x1="189" y1="240" x2="193" y2="350" stroke="var(--skin)" stroke-width="24"/>
+  </g>
+  <rect class="skin" x="158" y="76" width="24" height="30"/>
+  <rect class="skin" x="116" y="100" width="108" height="150" rx="34"/>
+  <circle class="skin" cx="170" cy="48" r="34"/>
+  <circle class="ink" cx="158" cy="44" r="3"/><circle class="ink" cx="182" cy="44" r="3"/>
+  <path d="M170 48 q-6 8 0 10" stroke="var(--ink)" stroke-width="2" fill="none"/>
+  <path d="M160 64 q10 8 20 0" stroke="var(--ink)" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+
+const SVG_SISTEMAS = `<svg viewBox="0 0 340 370" role="img" aria-label="Cuerpo humano con nariz, tráquea, pulmones, corazón, arterias y venas">
+  ${BODY}
+  <path class="art" d="M180 194 C170 214 158 232 153 250 L150 345"/>
+  <path class="art" d="M188 194 C195 220 190 236 189 250 L192 345"/>
+  <path class="art" d="M178 178 C150 150 135 130 126 128 L88 222"/>
+  <path class="art" d="M190 178 C215 140 214 128 214 128 L252 222"/>
+  <path class="vein" d="M186 200 C176 220 164 238 158 252 L157 345"/>
+  <path class="vein" d="M193 200 C200 225 197 240 196 252 L198 345"/>
+  <path class="vein" d="M174 184 C150 160 140 140 132 134 L95 226"/>
+  <path class="vein" d="M195 184 C222 150 221 134 220 134 L258 226"/>
+  <ellipse class="lung" cx="146" cy="163" rx="22" ry="36"/>
+  <ellipse class="lung" cx="195" cy="166" rx="18" ry="30"/>
+  <rect class="trach" x="165" y="68" width="10" height="64" rx="4"/>
+  <path d="M170 128 L152 140 M170 128 L190 142" stroke="var(--trach)" stroke-width="6" stroke-linecap="round"/>
+  <path class="heart" d="M184 204 C166 192 164 178 174 174 C180 172 184 176 184 180 C184 176 188 172 194 174 C204 178 202 192 184 204 Z"/>
+  <path class="lead" d="M50 52 L165 54"/><text class="lbl" x="6" y="57">Nariz</text>
+  <path class="lead" d="M66 98 L164 98"/><text class="lbl" x="6" y="103">Tráquea</text>
+  <path class="lead" d="M78 172 L126 166"/><text class="lbl" x="6" y="177">Pulmones</text>
+  <path class="lead" d="M58 300 L155 300"/><text class="lbl" x="6" y="305" style="fill:var(--vein)">Venas</text>
+  <path class="lead" d="M272 148 L198 184"/><text class="lbl" x="334" y="153" text-anchor="end">Corazón</text>
+  <path class="lead" d="M268 300 L193 300"/><text class="lbl" x="334" y="305" text-anchor="end" style="fill:var(--art)">Arterias</text>
+  <text class="air-in" x="334" y="20" text-anchor="end">entra O₂ (oxígeno)</text>
+  <text class="air-out" x="334" y="36" text-anchor="end">sale CO₂</text>
+</svg>`;
+
+const SVG_PULSO = `<svg viewBox="0 0 340 370" role="img" aria-label="Lugares donde se toma el pulso: cuello, muñecas y tobillos">
+  ${BODY}
+  ${[[178,92],[86,222],[254,222],[147,342],[193,342]].map(([x,y])=>`<circle class="pulse" cx="${x}" cy="${y}" r="6"/><circle class="pulse-ring" cx="${x}" cy="${y}" r="9"/>`).join("")}
+  <path class="lead" d="M270 84 L186 92"/><text class="lbl" x="334" y="89" text-anchor="end">Cuello</text>
+  <path class="lead" d="M58 252 L84 230"/><text class="lbl" x="6" y="268">Muñecas</text>
+  <path class="lead" d="M58 330 L139 342"/><text class="lbl" x="6" y="335">Tobillos</text>
+  <path class="ecg" d="M210 300 h20 l8 -24 l10 46 l8 -30 l6 8 h20 l8 -24 l10 46 l8 -30 l6 8 h14"/>
+</svg>`;
+
+const SVG_ETAPAS = `<svg viewBox="0 0 340 130" role="img" aria-label="Línea de la vida: infancia, adolescencia, madurez y vejez">
+  <text class="emo" x="34" y="30" text-anchor="middle">👶</text>
+  <text class="emo" x="70" y="30" text-anchor="middle">🧑</text>
+  <text class="emo" x="166" y="30" text-anchor="middle">👩‍💼</text>
+  <text class="emo" x="290" y="30" text-anchor="middle">👴</text>
+  <rect class="seg1" x="10" y="42" width="48" height="36" rx="6"/>
+  <rect class="seg2" x="58" y="42" width="24" height="36"/>
+  <rect class="seg3" x="82" y="42" width="168" height="36"/>
+  <path class="seg4" d="M250 42 H318 L332 60 L318 78 H250 Z"/>
+  <text class="wht" x="166" y="65" text-anchor="middle">MADUREZ (la más larga)</text>
+  <text class="wht" x="288" y="65" text-anchor="middle">VEJEZ</text>
+  <text class="lbl-s" x="10" y="96">0</text>
+  <text class="lbl-s" x="58" y="96" text-anchor="middle">13</text>
+  <text class="lbl-s" x="84" y="96" text-anchor="middle">18</text>
+  <text class="lbl-s" x="250" y="96" text-anchor="middle">60</text>
+  <text class="lbl-s" x="318" y="96" text-anchor="end">años →</text>
+  <text class="lbl-s" x="10" y="120" style="fill:var(--st1)">Infancia</text>
+  <text class="lbl-s" x="66" y="120" style="fill:var(--st2)">Adolescencia</text>
+</svg>`;
+
+const SVG_PLATO = `<svg viewBox="0 0 300 300" role="img" aria-label="Plato del Bien Comer">
+  <path class="fv"  d="M150 150 L129.2 268.2 A120 120 0 0 1 150 30 Z"/>
+  <path class="cer" d="M150 150 L150 30 A120 120 0 0 1 262.8 191 Z"/>
+  <path class="leg" d="M150 150 L262.8 191 A120 120 0 0 1 210 253.9 Z"/>
+  <path class="ani" d="M150 150 L210 253.9 A120 120 0 0 1 129.2 268.2 Z"/>
+  <circle class="plate-rim" cx="150" cy="150" r="123"/>
+  <path d="M150 150 L150 30 M150 150 L262.8 191 M150 150 L210 253.9 M150 150 L129.2 268.2" stroke="#fff" stroke-width="3"/>
+  <text class="emo" x="85" y="110" text-anchor="middle">🥦🍎</text>
+  <text class="wht" x="85" y="148" text-anchor="middle">VERDURAS</text>
+  <text class="wht" x="85" y="164" text-anchor="middle">Y FRUTAS</text>
+  <text class="emo" x="85" y="205" text-anchor="middle">🥕🍌</text>
+  <text class="wht" x="205" y="92" text-anchor="middle">CEREALES</text>
+  <text class="emo" x="205" y="125" text-anchor="middle">🌽🍞</text>
+  <text class="emo" x="214" y="210" text-anchor="middle">🫘</text>
+  <text class="emo" x="168" y="240" text-anchor="middle">🐟🥚</text>
+</svg>`;
+
+/* ========== CONTENIDO ========== */
+const TOPICS = [
+{ id:1, name:"Sistemas respiratorio y circulatorio", short:"Los sistemas", pages:"pág. 104", time:"6 min",
+  learn:`
+  <figure class="fig" style="margin:0">${SVG_SISTEMAS}<figcaption>Rojo = arterias (sangre con oxígeno) · Azul = venas (sangre de regreso)</figcaption></figure>
+  <div class="card">
+    <h3>Sistema respiratorio 🫁</h3>
+    <p class="lead">Se encarga de <b>absorber el oxígeno</b> del aire (al inhalar) y de <b>sacar el dióxido de carbono</b> (al exhalar).</p>
+    <p><b>1ª fase:</b> <b>inhalar</b> el aire por la <b>nariz</b> → pasa por la <b>tráquea</b> → llega a los <b>pulmones</b>.</p>
+    <p><b>2ª fase:</b> el <b>oxígeno</b> se absorbe y el <b>dióxido de carbono</b> se expulsa con la <b>exhalación</b>.</p>
+    <div class="grid2"><div><b>Inhalar</b>meter aire<br>entra oxígeno (O₂)</div><div><b>Exhalar</b>sacar aire<br>sale dióxido de carbono (CO₂)</div></div>
+  </div>
+  <div class="card">
+    <h3>Sistema circulatorio ❤️</h3>
+    <p class="lead">Se encarga de <b>transportar el oxígeno</b> de los pulmones al resto del cuerpo por medio de la <b>sangre</b>.</p>
+    <ul>
+      <li><b>Corazón:</b> <b>bombea</b> la sangre con oxígeno a todo el cuerpo.</li>
+      <li><b>Arterias:</b> <b>llevan</b> la sangre con oxígeno a todos los tejidos.</li>
+      <li><b>Venas:</b> la <b>regresan</b> para que se oxigene otra vez.</li>
+    </ul>
+    <p>La sangre viaja por tubitos llamados <b>vasos sanguíneos</b> (arterias y venas).</p>
+  </div>
+  <div class="tip"><b>Truco de cancha</b><b>A</b>rterias = <b>A</b>fuera (salen del corazón hacia el cuerpo). <b>V</b>enas = <b>V</b>uelven al corazón.</div>
+  <div class="card"><h3>Dato curioso</h3><p>Tu pulmón <b>derecho</b> es más grande: tiene <b>3 lóbulos</b>. El <b>izquierdo</b> tiene <b>2</b> porque le deja espacio al <b>corazón</b>.</p></div>`,
+  practice:[
+    {type:"order", q:"Ordena el camino del aire cuando inhalas:", items:["Nariz","Tráquea","Pulmones"], why:"El aire entra por la nariz, baja por la tráquea y llega a los pulmones."},
+    {type:"sort", q:"¿Arterias o venas?", buckets:["Arterias","Venas"],
+      items:[["Llevan la sangre con oxígeno a todo el cuerpo",0],["Regresan la sangre para oxigenarla otra vez",1],["En el dibujo son rojas",0],["En el dibujo son azules",1]],
+      why:"Arterias = afuera, hacia el cuerpo. Venas = vuelven al corazón."},
+    {type:"mc", q:"¿Qué órgano BOMBEA la sangre a todo el cuerpo?", options:["El corazón","Los pulmones","La tráquea","La nariz"], why:"El corazón es la bomba del sistema circulatorio."},
+    {type:"mc", q:"Al EXHALAR, ¿qué gas sacamos del cuerpo?", options:["Dióxido de carbono","Oxígeno","Agua","Sangre"], why:"Inhalamos oxígeno y exhalamos dióxido de carbono."}
+  ]},
+{ id:2, name:"Frecuencia cardiaca", short:"Frecuencia cardiaca", pages:"pág. 105", time:"5 min",
+  learn:`
+  <div class="card">
+    <h3>¿Qué es?</h3>
+    <p class="lead">La <b>frecuencia cardiaca</b> (o <b>pulso</b>) es la <b>cantidad de veces que el corazón late en un minuto</b>.</p>
+    <p>Se mide donde una <b>arteria</b> pasa cerca de la piel: <b>muñecas</b>, <b>cuello</b> y <b>tobillos</b>.</p>
+  </div>
+  <figure class="fig" style="margin:0">${SVG_PULSO}<figcaption>Pon los dedos índice y medio en el cuello y cuenta los latidos durante 1 minuto.</figcaption></figure>
+  <div class="card">
+    <h3>Frecuencia cardiaca máxima (FCmáx)</h3>
+    <p>Es lo más rápido que debería latir tu corazón. Se calcula <b>restando tu edad a 220</b>:</p>
+    <div class="formula">220 − edad = <span>FCmáx</span></div>
+    <div class="calc"><label for="edad"><b>Prueba con una edad:</b></label><input id="edad" type="number" inputmode="numeric" value="10" min="1" max="110"><output id="fcmax">= 210 latidos</output></div>
+    <p class="hint">Ejemplos del libro: Alberto 15 años → 205 · Romina 25 → 195 · Andrea 40 → 180 · Guillermo 60 → 160</p>
+  </div>
+  <div class="fix"><b>Ojo, Sofía</b>En tu libro escribiste FCmáx = 67, pero con 10 años es <b>220 − 10 = 210</b>. ¡Siempre resta tu edad a 220!</div>
+  <div class="tip"><b>Haz ejercicio y verás</b>Después de saltar o correr, la frecuencia cardiaca <b>aumenta</b> (el corazón late más rápido) porque los músculos necesitan más oxígeno. En reposo, baja.</div>`,
+  practice:[
+    {type:"fill", q:"Sofía tiene 10 años. ¿Cuál es su frecuencia cardiaca máxima? (220 − 10)", accept:["210"], answer:"210", why:"220 − 10 = 210 latidos por minuto."},
+    {type:"fill", q:"Un señor tiene 50 años. ¿Cuál es su FCmáx?", accept:["170"], answer:"170", why:"220 − 50 = 170."},
+    {type:"mc", q:"¿En qué lugares del cuerpo puedes tomar el pulso?", options:["Muñecas, cuello y tobillos","Rodillas, codos y orejas","Pelo, uñas y dientes","Solo en la panza"], why:"Ahí pasan arterias cerca de la piel."},
+    {type:"mc", q:"Después de dar 10 saltos, tu frecuencia cardiaca…", options:["aumenta","disminuye","se detiene","queda igual"], why:"Con la actividad física el corazón late más rápido."}
+  ]},
+{ id:3, name:"Autocuidado", short:"Autocuidado", pages:"pág. 106", time:"4 min",
+  learn:`
+  <div class="card">
+    <h3>Las infecciones 🦠</h3>
+    <p class="lead">Las <b>infecciones</b> son causadas por <b>microorganismos</b> como las <b>bacterias</b> y los <b>virus</b>, que atacan el <b>sistema inmunitario</b> (tus defensas) y lo debilitan.</p>
+    <p>La <b>contaminación del aire</b> está relacionada con algunas enfermedades infecciosas.</p>
+  </div>
+  <div class="card">
+    <h3>¿Por qué importa el oxígeno?</h3>
+    <p>Porque el cuerpo lo usa para <b>producir energía</b>. Sin oxígeno suficiente, el corazón y las células no pueden trabajar bien.</p>
+  </div>
+  <div class="card">
+    <h3>Para prevenir enfermedades respiratorias</h3>
+    <div class="tiles">
+      <div class="tile"><span class="ico">🧣</span><b>Abrigarte</b><span>en época de lluvia y frío</span></div>
+      <div class="tile"><span class="ico">🤧</span><b>Cubrirte la boca</b><span>al estornudar y toser (con el codo)</span></div>
+      <div class="tile"><span class="ico">🧼</span><b>Lavarte las manos</b><span>con frecuencia</span></div>
+      <div class="tile"><span class="ico">🌳</span><b>Cuidar el aire</b><span>menos autos, plantar árboles, no quemar basura</span></div>
+    </div>
+  </div>`,
+  practice:[
+    {type:"mc", q:"Las infecciones son causadas por…", options:["microorganismos como bacterias y virus","comer verduras","hacer ejercicio","dormir bien"], why:"Bacterias y virus atacan el sistema inmunitario."},
+    {type:"multi", q:"Toca TODAS las acciones que ayudan a prevenir enfermedades respiratorias:",
+      right:["Abrigarme cuando hace frío","Cubrirme la boca al toser","Lavarme las manos seguido"], wrong:["Compartir el vaso con un amigo enfermo","Quemar basura","Salir sin suéter cuando llueve"],
+      why:"Abrigarse, cubrirse la boca y lavarse las manos protegen tus defensas."},
+    {type:"mc", q:"¿Para qué usa el cuerpo el oxígeno?", options:["Para producir energía","Para hacer crecer el pelo","Para ver colores","Para nada"], why:"Sin oxígeno las células no pueden crear energía."}
+  ]},
+{ id:4, name:"Etapas del desarrollo", short:"Etapas", pages:"pág. 107", time:"5 min",
+  learn:`
+  <figure class="fig" style="margin:0">${SVG_ETAPAS}<figcaption>Los colores son los mismos que usaste en tu libro.</figcaption></figure>
+  <div class="stage" style="border-left:6px solid var(--st1)"><span class="ico">👶</span><div><b style="color:var(--st1)">Infancia</b><ul><li>Inicia el desarrollo de habilidades cognitivas (pensar, aprender).</li><li>Vocabulario limitado.</li><li>Se adquieren las primeras habilidades sociales y emocionales.</li></ul></div></div>
+  <div class="stage" style="border-left:6px solid var(--st2)"><span class="ico">🧑</span><div><b style="color:var(--st2)">Adolescencia</b><ul><li>Sucede de los <b>13 a los 18</b> años.</li><li>Aparecen los caracteres sexuales secundarios.</li><li>Comienza la maduración sexual.</li></ul></div></div>
+  <div class="stage" style="border-left:6px solid var(--st3)"><span class="ico">👩‍💼</span><div><b style="color:var(--st3)">Madurez</b><ul><li>Sucede de los <b>18 a los 60</b> años.</li><li>Inicia la vida profesional y laboral.</li><li>Es la etapa de <b>mayor duración</b>.</li></ul></div></div>
+  <div class="stage" style="border-left:6px solid var(--st4)"><span class="ico">👴</span><div><b style="color:var(--st4)">Vejez</b><ul><li>De los <b>60 años en adelante</b>.</li><li>Deterioro progresivo de las capacidades físicas.</li><li>Disminuye la visión y la audición.</li></ul></div></div>
+  <div class="tip"><b>Truco</b>Infancia → Adolescencia → Madurez → Vejez = <b>I-A-M-V</b>: “<b>I</b>ba <b>A</b> <b>M</b>i <b>V</b>ida”.</div>`,
+  practice:[
+    {type:"order", q:"Ordena las etapas del desarrollo humano:", items:["Infancia","Adolescencia","Madurez","Vejez"], why:"I-A-M-V: Iba A Mi Vida."},
+    {type:"sort", q:"¿A qué etapa pertenece cada característica?", buckets:["Infancia","Adolescencia","Madurez","Vejez"],
+      items:[["Vocabulario limitado",0],["Sucede de los 13 a los 18 años",1],["Inicia la vida profesional y laboral",2],["Disminución de la visión y la audición",3],["Comienza la maduración sexual",1],["Es la etapa de mayor duración",2],["Primeras habilidades sociales y emocionales",0],["De los 60 años en adelante",3]],
+      why:"Revisa las tarjetas de colores de arriba."}
+  ]},
+{ id:5, name:"Dieta correcta", short:"Dieta correcta", pages:"págs. 110–112", time:"7 min",
+  learn:`
+  <div class="card">
+    <h3>¿Qué es una dieta?</h3>
+    <p class="lead">Una <b>dieta</b> son los <b>hábitos alimenticios</b> de una persona (lo que come normalmente). No significa “dejar de comer”.</p>
+  </div>
+  <div class="card">
+    <h3>Una dieta correcta es…</h3>
+    <ul>
+      <li><b>Variada:</b> distintos alimentos en cada comida y distintas formas de cocinarlos.</li>
+      <li><b>Completa:</b> tiene todos los nutrientes (proteínas, lípidos y carbohidratos): incluye los <b>3 grupos</b> de alimentos.</li>
+      <li><b>Equilibrada:</b> los nutrientes en las <b>proporciones</b> adecuadas.</li>
+      <li><b>Adecuada:</b> según tu <b>edad, género y actividad física</b>.</li>
+      <li><b>Inocua:</b> <b>no tiene riesgos</b>: libre de bacterias, hongos y toxinas.</li>
+      <li><b>Suficiente:</b> la <b>cantidad</b> necesaria, ni más ni menos.</li>
+    </ul>
+  </div>
+  <div class="tip"><b>Truco para las 6</b>“<b>V</b>a <b>C</b>on <b>E</b>l <b>A</b>migo <b>I</b>nteligente <b>S</b>ofía” → Variada, Completa, Equilibrada, Adecuada, Inocua, Suficiente.</div>
+  <figure class="fig" style="margin:0">${SVG_PLATO}<figcaption>Plato del Bien Comer: verduras y frutas · cereales · leguminosas · alimentos de origen animal. ¡Y tomar agua simple!</figcaption></figure>
+  <div class="card">
+    <h3>Hábitos que mejoran la vida</h3>
+    <div class="tiles">
+      <div class="tile"><span class="ico">🏀</span><b>1 hora</b><span>de ejercicio diario</span></div>
+      <div class="tile"><span class="ico">💧</span><b>2 litros</b><span>de agua al día</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Obesidad infantil: consecuencias</h3>
+    <div class="grid2">
+      <div><b>Físicas (F)</b>hipertensión · diabetes · colesterol elevado · problemas respiratorios · desgaste de articulaciones y huesos</div>
+      <div><b>Psicológicas (P)</b>depresión · baja autoestima · discriminación</div>
+    </div>
+    <p>La <b>diabetes</b> es una enfermedad crónica que impide al cuerpo asimilar bien la <b>glucosa</b> (el azúcar) en la sangre.</p>
+  </div>
+  <div class="card">
+    <h3>La forma más sana de preparar</h3>
+    <div class="vs"><span class="y">A la plancha</span><span class="n">Empanizado</span><span class="y">Al vapor</span><span class="n">Capeado</span><span class="y">Al horno</span><span class="n">Frito</span><span class="y">De la olla</span><span class="n">Refrito</span><span class="y">Con sal y limón</span><span class="n">Con aderezo</span><span class="y">Palomitas naturales</span><span class="n">Con mantequilla</span></div>
+  </div>
+  <div class="card">
+    <h3>Cada región come distinto 🌎</h3>
+    <p>Los <b>hábitos alimenticios</b> dependen de los <b>productos que hay en la localidad</b> y de las <b>costumbres de la familia</b>.</p>
+    <div class="tiles">
+      <div class="tile"><span class="ico">🍝</span><b>Espagueti</b><span>Italia</span></div>
+      <div class="tile"><span class="ico">🍗</span><b>Mole con arroz</b><span>México</span></div>
+      <div class="tile"><span class="ico">🥘</span><b>Paella</b><span>España</span></div>
+      <div class="tile"><span class="ico">🥟</span><b>Dumplings (wontons)</b><span>China</span></div>
+    </div>
+  </div>`,
+  practice:[
+    {type:"sort", q:"¿Qué característica de la dieta correcta es?", buckets:["Inocua","Suficiente","Adecuada"],
+      items:[["No tiene bacterias, hongos ni toxinas",0],["La cantidad necesaria para cubrir lo que necesitas",1],["Según tu edad, género y actividad física",2]],
+      why:"Inocua = sin riesgos · Suficiente = cantidad · Adecuada = según la persona."},
+    {type:"sort", q:"¿Consecuencia Física (F) o Psicológica (P) de la obesidad infantil?", buckets:["F","P"],
+      items:[["Hipertensión",0],["Depresión",1],["Diabetes",0],["Baja autoestima",1],["Colesterol elevado",0],["Discriminación",1]],
+      why:"Físicas: el cuerpo. Psicológicas: los sentimientos y cómo te tratan."},
+    {type:"multi", q:"Toca las formas MÁS SALUDABLES de preparar:", right:["A la plancha","Al vapor","Al horno"], wrong:["Empanizado","Capeado","Frito"], why:"Plancha, vapor y horno usan poca grasa."},
+    {type:"mc", q:"¿Qué tiene que incluir una dieta COMPLETA?", options:["Los 3 grupos de alimentos","Solo carne","Solo frutas","Muchos dulces"], why:"Completa = todos los nutrientes, de los 3 grupos del Plato del Bien Comer."}
+  ]}
+];
+
+const QUIZ = [
+ {t:1,type:"mc",q:"¿Cuál es la función del sistema respiratorio?",options:["Absorber oxígeno del aire y eliminar el dióxido de carbono","Bombear la sangre","Digerir los alimentos","Mover los huesos"],why:"Respira: entra oxígeno, sale dióxido de carbono."},
+ {t:1,type:"order",q:"Ordena el camino del aire al inhalar:",items:["Nariz","Tráquea","Pulmones"],why:"Nariz → tráquea → pulmones."},
+ {t:1,type:"mc",q:"¿Qué transporta el sistema circulatorio a todo el cuerpo?",options:["Oxígeno, por medio de la sangre","Aire, por medio de la tráquea","Comida, por medio del estómago","Agua, por medio de la piel"],why:"La sangre lleva el oxígeno a todo el cuerpo."},
+ {t:1,type:"mc",q:"Las venas…",options:["regresan la sangre para que se oxigene nuevamente","bombean la sangre","llevan aire a los pulmones","son lo mismo que la tráquea"],why:"Venas = vuelven."},
+ {t:1,type:"mc",q:"¿Cuántos lóbulos tiene el pulmón derecho?",options:["3","2","1","4"],why:"El derecho tiene 3 y el izquierdo 2, porque ahí está el corazón."},
+ {t:2,type:"mc",q:"La frecuencia cardiaca es…",options:["las veces que el corazón late en un minuto","las veces que respiras en un día","lo que pesa el corazón","la temperatura del cuerpo"],why:"Latidos por minuto."},
+ {t:2,type:"fill",q:"Una persona de 30 años. ¿Cuál es su FCmáx? (220 − edad)",accept:["190"],answer:"190",why:"220 − 30 = 190."},
+ {t:2,type:"mc",q:"¿Dónde NO se toma el pulso?",options:["En la rodilla","En el cuello","En la muñeca","En el tobillo"],why:"El pulso se toma donde pasan arterias cerca de la piel: cuello, muñecas y tobillos."},
+ {t:2,type:"mc",q:"¿Qué pasa con la frecuencia cardiaca después de hacer ejercicio?",options:["Aumenta","Disminuye","Se detiene","No cambia"],why:"El corazón late más rápido para llevar más oxígeno."},
+ {t:3,type:"mc",q:"Las bacterias y los virus son…",options:["microorganismos que pueden causar infecciones","vitaminas","partes del corazón","alimentos sanos"],why:"Atacan y debilitan el sistema inmunitario."},
+ {t:3,type:"mc",q:"¿Qué acción ayuda a prevenir enfermedades respiratorias?",options:["Cubrirte la boca al toser y estornudar","Compartir vasos","No lavarte las manos","Salir mojada cuando hace frío"],why:"También abrigarse y lavarse las manos."},
+ {t:3,type:"mc",q:"La contaminación del aire…",options:["está asociada con algunas enfermedades","hace que respiremos mejor","no afecta la salud","da más energía"],why:"Respirar aire contaminado irrita los pulmones y nos enferma."},
+ {t:4,type:"order",q:"Ordena las etapas del desarrollo humano:",items:["Infancia","Adolescencia","Madurez","Vejez"],why:"I-A-M-V."},
+ {t:4,type:"mc",q:"¿Cuál es la etapa de MAYOR duración?",options:["Madurez","Infancia","Adolescencia","Vejez"],why:"De los 18 a los 60 años: ¡42 años!"},
+ {t:4,type:"mc",q:"“Disminución de la visión y de la audición” corresponde a…",options:["la vejez","la infancia","la adolescencia","la madurez"],why:"En la vejez hay deterioro de las capacidades físicas."},
+ {t:4,type:"mc",q:"La adolescencia sucede de los…",options:["13 a los 18 años","0 a los 5 años","18 a los 60 años","60 años en adelante"],why:"13–18 = adolescencia."},
+ {t:5,type:"mc",q:"Una dieta INOCUA es la que…",options:["no implica riesgos para la salud (sin bacterias, hongos ni toxinas)","tiene mucha comida","solo tiene frutas","tiene comida de otros países"],why:"Inocua = sin riesgo."},
+ {t:5,type:"sort",q:"¿Física o psicológica? (consecuencias de la obesidad infantil)",buckets:["Física","Psicológica"],items:[["Diabetes",0],["Baja autoestima",1],["Problemas respiratorios",0],["Discriminación",1]],why:"Físicas = cuerpo · Psicológicas = emociones."},
+ {t:5,type:"mc",q:"¿Cuál es la forma más saludable de preparar la papa?",options:["Al horno","Frita","Capeada","Con mantequilla"],why:"Al horno no lleva aceite extra."},
+ {t:5,type:"mc",triple:true,q:"TIRO DE 3: ¿Por qué la dieta es diferente en cada región del país y del mundo?",options:["Por los productos que hay en cada lugar y las costumbres de cada familia","Porque la gente no sabe cocinar","Porque está prohibido comer lo mismo","Por el color de los platos"],why:"Los hábitos alimenticios dependen de los productos de la localidad y de las costumbres familiares."}
+];
+
+document.addEventListener("input",e=>{ if(e.target.id==="edad"){ const v=parseInt(e.target.value,10); const o=document.getElementById("fcmax"); if(o) o.textContent = (v>0&&v<220)?`= ${220-v} latidos`:"= ?"; }});
+
+/* ========== ESTADO ========== */
+const S = {screen:"home", pts:0, earned:new Set(), done:new Set(), quiz:null, best:null};
+try{ const d=JSON.parse(localStorage.getItem("sofia-cien")||"{}"); if(d.done) S.done=new Set(d.done); if(d.best!=null) S.best=d.best; }catch(e){}
+function save(){ try{ localStorage.setItem("sofia-cien", JSON.stringify({done:[...S.done], best:S.best})); }catch(e){} }
+
+const $app=document.getElementById("app"), $score=document.getElementById("score"), $dots=document.getElementById("dots");
+function h(tag, attrs={}, ...kids){ const e=document.createElement(tag); for(const[k,v] of Object.entries(attrs)){ if(k==="class") e.className=v; else if(k==="html") e.innerHTML=v; else if(k.startsWith("on")) e.addEventListener(k.slice(2),v); else e.setAttribute(k,v);} for(const c of kids.flat()){ if(c==null) continue; e.append(c.nodeType?c:document.createTextNode(c)); } return e; }
+const shuffle=a=>{a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;};
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-zñ ]/g,"").replace(/\s+/g," ").trim();
+
+function addPts(n){ S.pts+=n; $score.firstChild.nodeValue=S.pts; $score.classList.remove("bump"); void $score.offsetWidth; $score.classList.add("bump"); }
+
+const GOOD=["¡Canasta!","¡Swish! Ni tocó el aro","¡Buen tiro!","¡Así se juega!","¡Encestaste!"];
+const BAD=["Rebotó en el aro","Casi, casi","Tiro fallado, ¡a la siguiente!"];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function feedback(ok, why, pts){
+  return h("div",{class:"fb "+(ok?"good":"bad"), role:"status"}, h("b",{}, ok?pick(GOOD)+(pts?`  +${pts}`:""):pick(BAD)), why);
+}
+
+/* ========== MOTOR DE PREGUNTAS ========== */
+function renderQ(q, label, onResult){
+  const box=h("div",{class:"q"});
+  if(label) box.append(h("div",{class:"qn"},label));
+  box.append(h("div",{class:"qt"},q.q));
+  const finish=(ok, extra)=>{ box.classList.add(ok?"is-right":"is-wrong"); const pts=onResult(ok); box.append(feedback(ok, (extra?extra+" ":"")+(q.why||""), pts)); };
+
+  if(q.type==="mc"){
+    const opts=h("div",{class:"opts"});
+    const items=shuffle(q.options.map((t,i)=>({t,ok:i===0})));
+    items.forEach(it=>{
+      const b=h("button",{class:"opt",type:"button",onclick:()=>{
+        [...opts.children].forEach((c,i)=>{c.disabled=true; if(items[i].ok) c.classList.add("right");});
+        if(!it.ok) b.classList.add("wrong");
+        finish(it.ok);
+      }}, it.t);
+      opts.append(b);
+    });
+    box.append(opts);
+  }
+
+  if(q.type==="multi"){
+    box.append(h("div",{class:"hint"},"Puedes tocar varias. Luego toca “Revisar”."));
+    const opts=h("div",{class:"opts"});
+    const items=shuffle([...q.right.map(t=>({t,ok:true})),...q.wrong.map(t=>({t,ok:false}))]);
+    const sel=new Set();
+    items.forEach((it,i)=>{ const b=h("button",{class:"opt",type:"button","aria-pressed":"false",onclick:()=>{ if(sel.has(i)){sel.delete(i);b.classList.remove("sel");b.setAttribute("aria-pressed","false");} else {sel.add(i);b.classList.add("sel");b.setAttribute("aria-pressed","true");} }}, it.t); opts.append(b); });
+    const chk=h("button",{class:"btn",type:"button",onclick:()=>{
+      chk.disabled=true; let ok=true;
+      items.forEach((it,i)=>{ const b=opts.children[i]; b.disabled=true; b.classList.remove("sel");
+        if(it.ok&&sel.has(i)) b.classList.add("right"); else if(it.ok){b.classList.add("right"); ok=false;} else if(sel.has(i)){b.classList.add("wrong"); ok=false;} });
+      finish(ok, ok?"":"Las verdes son las correctas.");
+    }},"Revisar");
+    box.append(opts, chk);
+  }
+
+  if(q.type==="order"){
+    box.append(h("div",{class:"hint"},"Toca en el orden correcto. Si te equivocas, toca un paso de arriba para quitarlo."));
+    const slots=h("div",{class:"slots"}), pool=h("div",{class:"opts"});
+    const items=shuffle(q.items); const chosen=[];
+    const chk=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{
+      chk.disabled=true; [...pool.children].forEach(b=>b.disabled=true);
+      const ok=chosen.every((t,i)=>t===q.items[i]);
+      [...slots.children].forEach((s,i)=>{ s.disabled=true; s.style.background=`var(${chosen[i]===q.items[i]?"--good-soft":"--bad-soft"})`; });
+      finish(ok, ok?"":"Orden correcto: "+q.items.join(" → ")+".");
+    }},"Revisar");
+    const draw=()=>{ slots.replaceChildren(...chosen.map((t,i)=>h("button",{class:"slot",type:"button",onclick:()=>{chosen.splice(i,1); draw();}}, h("i",{},String(i+1)), t)));
+      pool.replaceChildren(...items.filter(t=>!chosen.includes(t)).map(t=>h("button",{class:"opt",type:"button",onclick:()=>{chosen.push(t); draw();}},t)));
+      if(chosen.length===q.items.length) chk.removeAttribute("disabled"); else chk.setAttribute("disabled",""); };
+    draw(); box.append(slots,pool,chk);
+  }
+
+  if(q.type==="sort"){
+    const rows=h("div",{class:"opts"}); const ans=[];
+    const items=shuffle(q.items);
+    const chk=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{
+      chk.disabled=true; let ok=true;
+      items.forEach(([t,b],i)=>{ const r=rows.children[i]; const good=ans[i]===b; if(!good) ok=false; r.classList.add(good?"right":"wrong");
+        r.querySelectorAll(".bk button").forEach((x,j)=>{x.disabled=true; if(!good&&j===b){x.style.borderColor="var(--good)";}}); });
+      finish(ok, ok?"":"El borde verde marca la respuesta correcta.");
+    }},"Revisar");
+    items.forEach(([t],i)=>{
+      const bk=h("div",{class:"bk"});
+      q.buckets.forEach((name,j)=>bk.append(h("button",{type:"button",onclick:(e)=>{ ans[i]=j; bk.querySelectorAll("button").forEach(x=>x.classList.remove("sel")); e.currentTarget.classList.add("sel");
+        if(ans.filter(x=>x!=null).length===items.length) chk.removeAttribute("disabled"); }},name)));
+      rows.append(h("div",{class:"sortrow"}, h("div",{class:"it"},t), bk));
+    });
+    box.append(rows,chk);
+  }
+
+  if(q.type==="fill"){
+    const id="f"+Math.random().toString(36).slice(2,8);
+    const inp=h("input",{class:"fill",id,type:"text",autocomplete:"off",autocapitalize:"off",spellcheck:"false",placeholder:"Escribe tu respuesta","aria-label":"Tu respuesta"});
+    const go=()=>{ if(!inp.value.trim()) return; inp.disabled=true; chk.disabled=true;
+      const ok=q.accept.some(a=>norm(a)===norm(inp.value)); inp.style.borderColor=`var(${ok?"--good":"--bad"})`;
+      finish(ok, ok?"":`La respuesta es: “${q.answer}”.`); };
+    const chk=h("button",{class:"btn",type:"button",onclick:go},"Revisar");
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter") go();});
+    box.append(inp,chk);
+  }
+  return box;
+}
+
+/* ========== PANTALLAS ========== */
+const SCREENS=["home",1,2,3,4,5,"quiz"];
+function drawDots(){
+  $dots.replaceChildren(...SCREENS.map(s=>{
+    const lab=s==="home"?"Inicio":s==="quiz"?"Final":String(s);
+    const on=S.screen===s || (s==="quiz"&&S.screen==="results");
+    return h("button",{class:"dot"+(on?" on":(S.done.has(s)?" done":"")),type:"button","aria-label":s==="home"?"Inicio":s==="quiz"?"Partido final":"Jugada "+s,onclick:()=>go(s)},lab);
+  }));
+}
+function go(s){ S.screen=s; if(s==="quiz") S.quiz=null; render(); window.scrollTo({top:0}); }
+
+function home(){
+  const menu=h("div",{class:"menu"},
+    TOPICS.map(t=>h("button",{class:"play",type:"button",onclick:()=>go(t.id)},
+      h("span",{class:"n"},String(t.id)),
+      h("span",{class:"t"},h("b",{},t.name),h("span",{},`${t.pages} · ${t.time}`)),
+      S.done.has(t.id)?h("span",{class:"ok"},"Lista ✓"):null)),
+    h("button",{class:"play final",type:"button",onclick:()=>go("quiz")},
+      h("span",{class:"n"},"★"),
+      h("span",{class:"t"},h("b",{},"Partido final: la pruebita"),h("span",{},"20 preguntas · ~10 min"+(S.best!=null?` · Mejor: ${S.best}/10`:""))))
+  );
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Primer trimestre · Ciencias Naturales"),
+      h("h1",{},"¡A la cancha, Sofía!"),
+      h("p",{class:"lead"},"Hoy vas a jugar 5 jugadas para repasar todo lo del examen. En cada una lees un poco y luego tiras a la canasta con unas preguntas.")),
+    h("div",{class:"card"},
+      h("h3",{},"Cómo se juega"),
+      h("ul",{},
+        h("li",{},"Cada respuesta correcta es una ",h("b",{},"canasta de 2 puntos"),"."),
+        h("li",{},"La última pregunta del partido final es un ",h("b",{},"tiro de 3"),"."),
+        h("li",{},"Si fallas, lee la explicación: así se aprende de verdad."))),
+    h("div",{class:"section-h"},h("h2",{},"Las jugadas"),h("span",{},"tócalas en orden")),
+    menu
+  ];
+}
+
+function topic(id){
+  const t=TOPICS[id-1];
+  const prac=t.practice.map((q,i)=>renderQ(q,`Calentamiento ${i+1} de ${t.practice.length}`,ok=>{
+    const key=`${id}-${i}`; if(ok&&!S.earned.has(key)){S.earned.add(key); addPts(2); return 2;} return 0;
+  }));
+  const next=id<5?h("button",{class:"btn",type:"button",onclick:()=>{S.done.add(id);save();go(id+1);}},`Siguiente: ${TOPICS[id].name} →`)
+                 :h("button",{class:"btn navy",type:"button",onclick:()=>{S.done.add(id);save();go("quiz");}},"¡Al partido final! →");
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},`Jugada ${id} de 5 · ${t.pages}`), h("h1",{},t.name)),
+    h("div",{html:t.learn, style:"display:flex;flex-direction:column;gap:14px"}),
+    h("div",{class:"section-h"},h("h2",{},"Calentamiento"),h("span",{},"+2 por canasta")),
+    prac,
+    h("div",{class:"row"}, h("button",{class:"btn alt",type:"button",onclick:()=>go("home")},"← Menú"), next)
+  ];
+}
+
+function quiz(){
+  if(!S.quiz) S.quiz={i:0, pts:0, max:QUIZ.reduce((a,q)=>a+(q.triple?3:2),0), correct:0, misses:[], answered:false};
+  const Z=S.quiz, q=QUIZ[Z.i];
+  const pb=h("div",{class:"progress"},h("div",{style:`width:${(Z.i/QUIZ.length)*100}%`}));
+  const nextBtn=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{ Z.i++; Z.answered=false; if(Z.i>=QUIZ.length){S.screen="results";} render(); window.scrollTo({top:0}); }}, Z.i===QUIZ.length-1?"Ver mi resultado →":"Siguiente pregunta →");
+  const card=renderQ(q, `Pregunta ${Z.i+1} de ${QUIZ.length}${q.triple?" · vale 3":""}`, ok=>{
+    Z.answered=true; nextBtn.removeAttribute("disabled");
+    if(ok){ const p=q.triple?3:2; Z.pts+=p; Z.correct++; addPts(p); return p; }
+    Z.misses.push(q); return 0;
+  });
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Partido final"), h("h1",{},"La pruebita"),
+      h("p",{},`Marcador del partido: ${Z.pts} de ${Z.max} puntos`)),
+    pb, card, nextBtn
+  ];
+}
+
+function results(){
+  const Z=S.quiz; const cal=Math.round((Z.pts/Z.max)*100)/10;
+  const calTxt=cal.toFixed(1).replace(".0","");
+  if(S.best==null||cal>S.best){S.best=Number(calTxt);save();}
+  const msg= cal>=9?"¡Eres la MVP del partido! Vas lista para el examen.":
+             cal>=7?"¡Muy buen partido! Repasa las que fallaste y quedas lista.":
+                    "Buen esfuerzo. Repasa las jugadas de abajo y vuelve a jugar el partido.";
+  const missTopics=[...new Set(Z.misses.map(q=>q.t))];
+  const ansOf=q=>q.type==="mc"?q.options[0]:q.type==="order"?q.items.join(" → "):q.type==="fill"?q.answer:q.items.map(([t,b])=>`${q.buckets[b]}: ${t.toLowerCase()}`).join(" · ");
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Final del partido"), h("h1",{},"Tu resultado")),
+    h("div",{class:"card"},
+      h("div",{class:"result-big"},`${calTxt}`, h("span",{style:"font-size:24px;color:var(--muted)"}," / 10")),
+      h("p",{},`Acertaste ${Z.correct} de ${QUIZ.length} preguntas · ${Z.pts} de ${Z.max} puntos.`),
+      h("p",{class:"lead"},h("b",{},msg))),
+    Z.misses.length?h("div",{class:"section-h"},h("h2",{},"Para repasar"),h("span",{},`${Z.misses.length} tiro(s) fallado(s)`)):null,
+    Z.misses.map(q=>h("div",{class:"miss"}, h("div",{class:"qn hint"},`Jugada ${q.t}: ${TOPICS[q.t-1].name}`), h("b",{},q.q), h("div",{class:"ans"},"✓ "+ansOf(q)), h("div",{},q.why))),
+    missTopics.length?h("div",{class:"row"}, missTopics.map(t=>h("button",{class:"btn alt",type:"button",onclick:()=>go(t)},`Repasar: ${TOPICS[t-1].name}`))):null,
+    h("div",{class:"row"}, h("button",{class:"btn",type:"button",onclick:()=>go("quiz")},"Jugar otra vez"), h("button",{class:"btn alt",type:"button",onclick:()=>go("home")},"Menú"))
+  ];
+}
+
+function render(){
+  drawDots();
+  const s=S.screen;
+  const out= s==="home"?home(): s==="quiz"?quiz(): s==="results"?results(): topic(s);
+  $app.replaceChildren(...out.flat().filter(Boolean));
+}
+render();
+</script>
+</body>
+</html>
