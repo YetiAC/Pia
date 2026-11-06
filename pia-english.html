@@ -588,5 +588,91 @@ function render(){
 }
 render();
 </script>
+
+
+<style>
+.say{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;border:2px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:4px 12px;font-weight:800;font-size:15px;min-height:38px;margin-bottom:6px;cursor:pointer}
+.say.on{background:var(--ball);color:#fff;border-color:var(--ball)}
+.say.big{font-size:17px;padding:8px 16px;min-height:46px;background:var(--navy);color:var(--navy-ink);border-color:var(--navy);margin-top:10px}
+.say.big.on{background:var(--ball);border-color:var(--ball)}
+.grid2>div>.say{margin-bottom:4px}
+</style>
+<script>
+(function(){
+  const DEF = "en"; // idioma por defecto cuando no se distingue: "es" o "en"
+  if (typeof window.speechSynthesis === "undefined") return;
+  let ES=null, EN=null;
+  function pick(){ try{ const v=speechSynthesis.getVoices();
+    ES=v.find(x=>/es[-_]MX/i.test(x.lang))||v.find(x=>/^es/i.test(x.lang))||null;
+    EN=v.find(x=>/en[-_]US/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null; }catch(e){} }
+  pick(); try{ speechSynthesis.onvoiceschanged=pick; }catch(e){}
+
+  const ESW=new Set("el la los las de del que y en es son un una unos unas con para por se su sus tu tus te lo al como más pero si no qué cuál cuando dónde porque también muy ya antes después hay ser está están acción verbo sustantivo palabra palabras significa ejemplo truco ojo mi mis le les nos esta este esto sin toca escribe ordena cuál cuáles cómo larga corta pasando decir otra otro cada todo todas todos lugar cosas cosa sí nuestro nuestra yo ella ellos usar usa dice".split(" "));
+  const ENW=new Set("the a an is are was were to of and in it you he she they i my his her when with for on at this that be have has do does can can't will what which who how why your our their from them there then because so but not like".split(" "));
+  function lang(chunk){
+    const words=chunk.toLowerCase().match(/[a-záéíóúüñ']+/g)||[];
+    let es=(chunk.match(/[áéíóúñ¿¡]/gi)||[]).length*2, en=0;
+    for(const w of words){ if(ESW.has(w)) es++; if(ENW.has(w)) en++; }
+    if(es>en) return "es"; if(en>es) return "en"; return DEF;
+  }
+  function clean(t){ return t.replace(/🔊[^\n]*?(Escuchar toda la jugada|Escuchar|Detener)/g,"")
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️‍]/gu,"")
+    .replace(/[_]{2,}/g," blank ").replace(/\s+/g," ").trim(); }
+  function chunks(text){
+    const out=[];
+    text.split(/\n+/).forEach(line=>{
+      line.split(/(?<=[.!?…:])\s+|\s*[·•→←↔⬅➡]\s*|[“”"«»()]/).forEach(c=>{ c=clean(c); if(c && /[a-záéíóúñ0-9]/i.test(c)) out.push(c); });
+    });
+    return out;
+  }
+  let current=null;
+  function stop(){ try{ speechSynthesis.cancel(); }catch(e){} if(current){ current.classList.remove("on"); current.textContent=current.dataset.label; current=null; } }
+  function speak(text, btn){
+    const wasMe = current===btn; stop(); if(wasMe) return;
+    const list=[]; let lastL=null;
+    for(const c of chunks(text)){ const l=lang(c);
+      if(l===lastL && list.length && list[list.length-1].length<220) list[list.length-1]+= (/[.!?…:,]$/.test(list[list.length-1])?" ":", ")+c;
+      else list.push(c); lastL=l; }
+    if(!list.length) return;
+    current=btn; btn.classList.add("on"); btn.textContent="⏹ Detener";
+    list.forEach((c,i)=>{ const u=new SpeechSynthesisUtterance(c); const l=lang(c);
+      u.lang = l==="en"?"en-US":"es-MX"; const v = l==="en"?EN:ES; if(v) u.voice=v; u.rate = l==="en"?0.85:0.95;
+      if(i===list.length-1) u.onend=u.onerror=()=>{ if(current===btn) stop(); };
+      speechSynthesis.speak(u); });
+  }
+  function mk(label, getText, big){
+    const b=document.createElement("button"); b.type="button"; b.className="say"+(big?" big":""); b.dataset.label=label; b.textContent=label;
+    b.setAttribute("aria-label","Escuchar en voz alta");
+    b.addEventListener("click",e=>{ e.stopPropagation(); speak(getText(), b); });
+    return b;
+  }
+  function qText(q){
+    const t=[q.querySelector(".qt")?.innerText||""];
+    q.querySelectorAll(".opts > .opt, .sortrow .it").forEach(o=>t.push(o.innerText));
+    const bk=q.querySelector(".sortrow .bk"); if(bk) t.push("Opciones: "+[...bk.querySelectorAll("button")].map(b=>b.innerText).join(", "));
+    return t.join("\n");
+  }
+  function decorate(){
+    const app=document.getElementById("app"); if(!app) return;
+    app.querySelectorAll(".card, .tip, .fix, .stage, .grid2 > div, .miss").forEach(c=>{
+      if(c.querySelector(":scope > .say") || c.closest(".q")) return;
+      if(c.matches(".stage") && c.closest(".card")) return;
+      c.prepend(mk("🔊 Escuchar", ()=>c.innerText));
+    });
+    app.querySelectorAll(".q").forEach(q=>{
+      if(q.querySelector(":scope > .say")) return;
+      const qt=q.querySelector(".qt"); if(qt) qt.before(mk("🔊 Escuchar", ()=>qText(q)));
+    });
+    const hero=app.querySelector("section.hero");
+    if(hero && !hero.querySelector(".say") && /^Jugada/i.test(hero.querySelector(".eyebrow")?.textContent||"")){
+      const learn=hero.nextElementSibling;
+      if(learn) hero.append(mk("🔊 Escuchar toda la jugada", ()=>hero.querySelector("h1").innerText+".\n"+learn.innerText, true));
+    }
+  }
+  new MutationObserver(()=>decorate()).observe(document.getElementById("app"),{childList:true,subtree:true});
+  decorate();
+  document.addEventListener("click",e=>{ if(e.target.closest(".dot, .play, main > .btn, .row .btn")) stop(); },true);
+})();
+</script>
 </body>
 </html>
