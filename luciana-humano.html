@@ -282,6 +282,14 @@ const TOPICS = [
     <h3>Valores de la familia 💎</h3>
     <div class="chips"><span class="chip">tolerancia</span><span class="chip">honestidad</span><span class="chip">responsabilidad</span><span class="chip">solidaridad</span><span class="chip">colaboración</span><span class="chip">empatía</span><span class="chip">amor</span><span class="chip">respeto</span></div>
     <p>Los valores se <b>heredan</b>: los aprendemos de nuestra familia.</p>
+    <ul>
+      <li><b>Tolerancia:</b> respetar a quien piensa o es diferente.</li>
+      <li><b>Honestidad:</b> decir la verdad.</li>
+      <li><b>Responsabilidad:</b> cumplir con tus tareas.</li>
+      <li><b>Solidaridad:</b> ayudar a quien lo necesita.</li>
+      <li><b>Colaboración:</b> trabajar juntos.</li>
+      <li><b>Empatía:</b> ponerte en el lugar del otro.</li>
+    </ul>
   </div>
   <div class="tip"><b>Familia inclusiva</b>Le da el <b>mismo valor</b> a todos sus integrantes y acepta las <b>diferencias</b> de cada uno.</div>`,
   practice:[
@@ -305,7 +313,7 @@ const TOPICS = [
   <div class="card">
     <h3>Ejemplos de tu identidad</h3>
     <div class="tiles">
-      <div class="tile"><span class="ico">📛</span><b>Nombre</b><span>Luciana García</span></div>
+      <div class="tile"><span class="ico">📛</span><b>Nombre</b><span>Luciana</span></div>
       <div class="tile"><span class="ico">📏</span><b>Rasgo físico</b><span>¡eres alta!</span></div>
       <div class="tile"><span class="ico">🏀</span><b>Habilidad</b><span>jugar básquetbol</span></div>
       <div class="tile"><span class="ico">🔢</span><b>Materia favorita</b><span>matemáticas</span></div>
@@ -345,6 +353,24 @@ const QUIZ = [
  {t:3,type:"mc",q:"¿Por qué cambiamos de aspecto con el tiempo?",options:["Porque crecemos y nos desarrollamos","Porque nos portamos mal","Por la ropa","No cambiamos"],why:"El cuerpo crece."},
  {t:3,type:"mc",triple:true,q:"TIRO DE 3: Todos los cuerpos son diferentes, por eso…",options:["todos merecen respeto","hay que burlarse","unos valen más","hay que esconderlos"],why:"¡Todos merecen respeto! 💛"}
 ];
+
+/* ========== PARTIDO 2 (más difícil) ========== */
+const QUIZ2 = [
+ {t:2,type:"mc",q:"El hermano de tu MAMÁ es tu…",options:["tío materno","tío paterno","primo","abuelo"],why:"Es de la familia de mamá → materno."},
+ {t:2,type:"mc",q:"La mamá de tu PAPÁ es tu…",options:["abuela paterna","abuela materna","tía","prima"],why:"Es de la familia de papá → paterna."},
+ {t:2,type:"mc",q:"¿Cuál NO es parte de la familia nuclear?",options:["La prima","La mamá","El papá","El hermano"],why:"Los primos son familia extendida."},
+ {t:1,type:"sort",q:"¿Idea, organización o acuerdo?",buckets:["Idea","Organización","Acuerdo"],items:[["En la escuela se encuentran los mejores amigos.",0],["Los niños de 3° decorarán el patio para el festival.",1],["Usarán los materiales solo cuando terminen su actividad.",2]],why:"Idea = lo que pensamos · Organización = repartir tareas · Acuerdo = regla que decidimos juntos."},
+ {t:1,type:"mc",q:"¿Cuál de estas NO es una práctica cultural?",options:["Hacer la tarea de matemáticas","Celebrar el Día de Muertos","Comer tamales en Navidad","Usar rebozo"],why:"Las prácticas culturales son tradiciones, comida y ropa de una comunidad."},
+ {t:2,type:"sort",q:"¿Qué valor es?",buckets:["Honestidad","Solidaridad","Responsabilidad"],items:[["Decir la verdad aunque te regañen",0],["Donar ropa a quien la necesita",1],["Hacer tu tarea sin que te lo pidan",2]],why:"Honestidad = verdad · Solidaridad = ayudar · Responsabilidad = cumplir."},
+ {t:2,type:"mc",q:"Tu compañera olvidó su diccionario y le prestas el tuyo. ¿Qué cuidado afectivo es?",options:["Generosidad","Enojo","Competencia","Pereza"],why:"Compartir lo tuyo es generosidad."},
+ {t:2,type:"mc",q:"Respetar a un compañero que piensa diferente a ti es…",options:["tolerancia","honestidad","gastronomía","jerarquía"],why:"Tolerancia = respetar las diferencias."},
+ {t:2,type:"mc",q:"¿Qué quiere decir que en la familia hay JERARQUÍA?",options:["Que hay un orden: los adultos cuidan y guían","Que todos hacen lo que quieren","Que los niños mandan","Que nadie ayuda"],why:"Jerarquía = orden y organización."},
+ {t:3,type:"sort",q:"¿Lo COMPARTES con otros o te hace ÚNICA?",buckets:["Lo comparto","Me hace única"],items:[["Ser mexicana",0],["Mis huellas digitales",1],["Ir a la misma escuela que mis amigas",0],["Mi forma de dibujar",1]],why:"La identidad tiene las dos partes."},
+ {t:3,type:"mc",q:"¿Qué NO cambia en tu cuerpo cuando creces?",options:["Tu nombre","Tu estatura","El tamaño de tus pies","Tus dientes"],why:"El nombre no es parte del cuerpo."},
+ {t:2,type:"mc",triple:true,q:"TIRO DE 3: Según la Declaración Universal de los Derechos Humanos, la familia es…",options:["el elemento natural y fundamental de la sociedad","un club deportivo","algo sin importancia","solo para adultos"],why:"Ahí las personas nacen, se desarrollan y construyen su identidad (pág. 216)."}
+];
+let QA = QUIZ;
+function goQuiz(set){ QA = set; go("quiz"); }
 
 /* ========== LEER EN VOZ ALTA ========== */
 let ES_VOICE=null;
@@ -510,9 +536,12 @@ function home(){
       h("span",{class:"n"},String(t.id)),
       h("span",{class:"t"},h("b",{},t.name),h("span",{},`${t.pages} · ${t.time}`)),
       S.done.has(t.id)?h("span",{class:"ok"},"Lista ✓"):null)),
-    h("button",{class:"play final",type:"button",onclick:()=>go("quiz")},
-      h("span",{class:"n"},"★"),
-      h("span",{class:"t"},h("b",{},"Partido final: la pruebita"),h("span",{},`${QUIZ.length} preguntas · ~5 min`+(S.best!=null?` · Mejor: ${S.best}/10`:""))))
+    h("button",{class:"play final",type:"button",onclick:()=>goQuiz(QUIZ)},
+      h("span",{class:"n"},"1"),
+      h("span",{class:"t"},h("b",{},"Partido 1: la pruebita"),h("span",{},`${QUIZ.length} preguntas · ~5 min`+(S.best!=null?` · Mejor: ${S.best}/10`:"")))),
+    h("button",{class:"play final",type:"button",onclick:()=>goQuiz(QUIZ2)},
+      h("span",{class:"n"},"2"),
+      h("span",{class:"t"},h("b",{},"Partido 2: más difícil 🔥"),h("span",{},`${QUIZ2.length} preguntas nuevas · ~5 min`)))
   );
   return [
     h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Examen · De lo Humano y lo Comunitario"),
@@ -546,17 +575,17 @@ function topic(id){
 }
 
 function quiz(){
-  if(!S.quiz) S.quiz={i:0, pts:0, max:QUIZ.reduce((a,q)=>a+(q.triple?3:2),0), correct:0, misses:[], answered:false};
-  const Z=S.quiz, q=QUIZ[Z.i];
-  const pb=h("div",{class:"progress"},h("div",{style:`width:${(Z.i/QUIZ.length)*100}%`}));
-  const nextBtn=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{ Z.i++; Z.answered=false; if(Z.i>=QUIZ.length){S.screen="results";} render(); window.scrollTo({top:0}); }}, Z.i===QUIZ.length-1?"Ver mi resultado →":"Siguiente pregunta →");
-  const card=renderQ(q, `Pregunta ${Z.i+1} de ${QUIZ.length}${q.triple?" · vale 3":""}`, ok=>{
+  if(!S.quiz) S.quiz={i:0, pts:0, max:QA.reduce((a,q)=>a+(q.triple?3:2),0), correct:0, misses:[], answered:false};
+  const Z=S.quiz, q=QA[Z.i];
+  const pb=h("div",{class:"progress"},h("div",{style:`width:${(Z.i/QA.length)*100}%`}));
+  const nextBtn=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{ Z.i++; Z.answered=false; if(Z.i>=QA.length){S.screen="results";} render(); window.scrollTo({top:0}); }}, Z.i===QA.length-1?"Ver mi resultado →":"Siguiente pregunta →");
+  const card=renderQ(q, `Pregunta ${Z.i+1} de ${QA.length}${q.triple?" · vale 3":""}`, ok=>{
     Z.answered=true; nextBtn.removeAttribute("disabled");
     if(ok){ const p=q.triple?3:2; Z.pts+=p; Z.correct++; addPts(p); return p; }
     Z.misses.push(q); return 0;
   });
   return [
-    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Partido final"), h("h1",{},"La pruebita"),
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Partido final"), h("h1",{},QA===QUIZ2?"Partido 2 🔥":"La pruebita"),
       h("p",{},`Marcador del partido: ${Z.pts} de ${Z.max} puntos`)),
     pb, card, nextBtn
   ];
@@ -575,7 +604,7 @@ function results(){
     h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Final del partido"), h("h1",{},"Tu resultado")),
     h("div",{class:"card"},
       h("div",{class:"result-big"},`${calTxt}`, h("span",{style:"font-size:24px;color:var(--muted)"}," / 10")),
-      h("p",{},`Acertaste ${Z.correct} de ${QUIZ.length} preguntas · ${Z.pts} de ${Z.max} puntos.`),
+      h("p",{},`Acertaste ${Z.correct} de ${QA.length} preguntas · ${Z.pts} de ${Z.max} puntos.`),
       h("p",{class:"lead"},h("b",{},msg))),
     Z.misses.length?h("div",{class:"section-h"},h("h2",{},"Para repasar"),h("span",{},`${Z.misses.length} tiro(s) fallado(s)`)):null,
     Z.misses.map(q=>h("div",{class:"miss"}, h("div",{class:"qn hint"},`Jugada ${q.t}: ${TOPICS[q.t-1].name}`), h("b",{},q.q), h("div",{class:"ans"},"✓ "+ansOf(q)), h("div",{},q.why))),
