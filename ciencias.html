@@ -184,7 +184,7 @@ svg .emo{font-size:22px}
 
 <header class="board">
   <div class="board-in">
-    <div class="who"><small>Examen de Ciencias · 5°</small>SOFÍA</div>
+    <div class="who"><small>Examen de Ciencias · 5°</small>PÍA</div>
     <div class="score" id="score">0<small>PUNTOS</small></div>
   </div>
   <nav class="dots" id="dots" aria-label="Jugadas"></nav>
@@ -329,10 +329,10 @@ const TOPICS = [
     <div class="calc"><label for="edad"><b>Prueba con una edad:</b></label><input id="edad" type="number" inputmode="numeric" value="10" min="1" max="110"><output id="fcmax">= 210 latidos</output></div>
     <p class="hint">Ejemplos del libro: Alberto 15 años → 205 · Romina 25 → 195 · Andrea 40 → 180 · Guillermo 60 → 160</p>
   </div>
-  <div class="fix"><b>Ojo, Sofía</b>En tu libro escribiste FCmáx = 67, pero con 10 años es <b>220 − 10 = 210</b>. ¡Siempre resta tu edad a 220!</div>
+  <div class="fix"><b>Ojo, Pía</b>En tu libro escribiste FCmáx = 67, pero con 10 años es <b>220 − 10 = 210</b>. ¡Siempre resta tu edad a 220!</div>
   <div class="tip"><b>Haz ejercicio y verás</b>Después de saltar o correr, la frecuencia cardiaca <b>aumenta</b> (el corazón late más rápido) porque los músculos necesitan más oxígeno. En reposo, baja.</div>`,
   practice:[
-    {type:"fill", q:"Sofía tiene 10 años. ¿Cuál es su frecuencia cardiaca máxima? (220 − 10)", accept:["210"], answer:"210", why:"220 − 10 = 210 latidos por minuto."},
+    {type:"fill", q:"Pía tiene 10 años. ¿Cuál es su frecuencia cardiaca máxima? (220 − 10)", accept:["210"], answer:"210", why:"220 − 10 = 210 latidos por minuto."},
     {type:"fill", q:"Un señor tiene 50 años. ¿Cuál es su FCmáx?", accept:["170"], answer:"170", why:"220 − 50 = 170."},
     {type:"mc", q:"¿En qué lugares del cuerpo puedes tomar el pulso?", options:["Muñecas, cuello y tobillos","Rodillas, codos y orejas","Pelo, uñas y dientes","Solo en la panza"], why:"Ahí pasan arterias cerca de la piel."},
     {type:"mc", q:"Después de dar 10 saltos, tu frecuencia cardiaca…", options:["aumenta","disminuye","se detiene","queda igual"], why:"Con la actividad física el corazón late más rápido."}
@@ -588,7 +588,7 @@ function home(){
   );
   return [
     h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Primer trimestre · Ciencias Naturales"),
-      h("h1",{},"¡A la cancha, Sofía!"),
+      h("h1",{},"¡A la cancha, Pía!"),
       h("p",{class:"lead"},"Hoy vas a jugar 5 jugadas para repasar todo lo del examen. En cada una lees un poco y luego tiras a la canasta con unas preguntas.")),
     h("div",{class:"card"},
       h("h3",{},"Cómo se juega"),
