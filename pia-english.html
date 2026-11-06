@@ -621,7 +621,7 @@ render();
   function chunks(text){
     const out=[];
     text.split(/\n+/).forEach(line=>{
-      line.split(/(?<=[.!?…:])\s+|\s*[·•→←↔⬅➡]\s*|[“”"«»()]/).forEach(c=>{ c=clean(c); if(c && /[a-záéíóúñ0-9]/i.test(c)) out.push(c); });
+      line.replace(/([.!?…:])\s+/g,"$1\u0001").split(/\u0001|\s*[·•→←↔⬅➡]\s*|[“”"«»()]/).forEach(c=>{ c=clean(c); if(c && /[a-záéíóúñ0-9]/i.test(c)) out.push(c); });
     });
     return out;
   }
