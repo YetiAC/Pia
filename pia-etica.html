@@ -255,14 +255,30 @@ const TOPICS = [
     <h3>¿Ayuda o daña? (pág. 142)</h3>
     <div class="vs"><span class="y">🌱 Reforestar</span><span class="n">🐟 Pescar con redes de más</span><span class="y">♻️ Usar productos reciclables</span><span class="n">🐻 Enjaular animales silvestres</span><span class="y">🪴 Plantar en casa y la escuela</span><span class="n">🚜 Talar bosques</span></div>
   </div>
-  <div class="tip"><b>Dato del libro</b>Cada estado tiene una <b>Ley de Protección de los Animales</b>: prohíbe vender animales en la calle y vender animales en peligro de extinción.</div>`,
+  <div class="tip"><b>Dato del libro</b>Cada estado tiene una <b>Ley de Protección de los Animales</b>: prohíbe vender animales en la calle y vender animales en peligro de extinción.</div>
+  <div class="card">
+    <h3>La biodiversidad en nuestras tradiciones (pág. 139)</h3>
+    <p class="lead">El <b>clima</b>, los <b>animales</b> y las <b>plantas</b> de cada lugar influyen en nuestras <b>tradiciones y costumbres</b>.</p>
+    <div class="tiles">
+      <div class="tile"><span class="ico">🎄</span><b>Navidad</b><span>adornamos con nochebuenas, musgo y heno, que son plantas de temporada</span></div>
+      <div class="tile"><span class="ico">🏵️</span><b>Día de Muertos</b><span>la flor de cempasúchil florece en otoño y adorna los altares</span></div>
+      <div class="tile"><span class="ico">🌽</span><b>Comida</b><span>el maíz, el chile y el frijol se cultivan en México desde hace miles de años</span></div>
+      <div class="tile"><span class="ico">🦋</span><b>Mariposa monarca</b><span>llega a Michoacán cerca del Día de Muertos; muchos pueblos la relacionan con las almas que regresan</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Inclusión: los pueblos indígenas</h3>
+    <p>Los grupos indígenas de México, como los <b>wixárika</b>, <b>tzeltales</b> y <b>nahuas</b>, tienen un <b>profundo respeto por el medioambiente</b>, porque es su <b>medio de subsistencia</b> (de ahí obtienen lo que necesitan para vivir) y la <b>base de sus costumbres y tradiciones</b>.</p>
+  </div>`,
   practice:[
     {type:"fill", q:"La ________ es la variedad de seres vivos en la Tierra que mantienen relaciones entre sí.", accept:["biodiversidad","la biodiversidad"], answer:"biodiversidad", why:"Bio = vida; diversidad = variedad."},
     {type:"mc", q:"México es un país megadiverso porque…", options:["alberga uno de los mayores índices de biodiversidad de la Tierra","tiene muchas ciudades grandes","es el país más grande del mundo","tiene muchas fábricas"], why:"Mega = muy grande; diverso = variado."},
     {type:"sort", q:"¿Ayuda o daña a la biodiversidad?", buckets:["Ayuda ✓","Daña ✗"],
       items:[["Plantar árboles",0],["Talar un bosque",1],["Enjaular a un oso",1],["Usar vasos reciclables",0],["Atrapar peces con redes",1]],
       why:"Proteger y regenerar ayuda; destruir, encerrar y sobreexplotar daña."},
-    {type:"mc", q:"Soltar en un lago una tortuga mascota de otro país puede causar…", options:["introducción de especies invasoras","más equilibrio","cambio de latitud","nada"], why:"Una especie de fuera puede comerse o desplazar a las especies nativas."}
+    {type:"mc", q:"Soltar en un lago una tortuga mascota de otro país puede causar…", options:["introducción de especies invasoras","más equilibrio","cambio de latitud","nada"], why:"Una especie de fuera puede comerse o desplazar a las especies nativas."},
+    {type:"mc", q:"En Navidad adornamos con nochebuenas, musgo y heno. Esto es un ejemplo de…", options:["cómo las plantas influyen en una tradición","un agente perturbador","sobreexplotación","un modelo de desarrollo"], why:"El clima, los animales y las plantas influyen en nuestras tradiciones."},
+    {type:"mc", q:"¿Por qué los wixárika, tzeltales y nahuas respetan tanto el medioambiente?", options:["Porque es su medio de subsistencia y la base de sus costumbres y tradiciones","Porque se lo pide el gobierno","Porque no les importa la naturaleza","Porque viven en ciudades"], why:"De la naturaleza obtienen lo que necesitan y en ella se basan sus tradiciones."}
   ]},
 { id:2, name:"Modelos de desarrollo", pages:"pág. 140", time:"5 min",
   learn:`
@@ -398,6 +414,7 @@ const QUIZ = [
  {t:1,type:"mc",q:"¿Qué permite la biodiversidad en los ecosistemas?",options:["Que exista un equilibrio","Que haya más fábricas","Que no llueva","Que haya menos especies"],why:"La biodiversidad mantiene el equilibrio."},
  {t:1,type:"mc",q:"¿Qué condiciones necesitan plantas y animales para sobrevivir en un lugar?",options:["Clima, latitud y altitud","Dinero y transporte","Fábricas y carreteras","Luz eléctrica"],why:"Condiciones climáticas, de latitud y de altitud."},
  {t:1,type:"mc",q:"¿Cuál de estos es un factor de pérdida de biodiversidad?",options:["Introducción de especies invasoras","Reforestar","Reciclar","Ahorrar agua"],why:"Las otras ayudan."},
+ {t:1,type:"mc",q:"Los wixárika, tzeltales y nahuas tienen un profundo respeto por el medioambiente porque…",options:["es su medio de subsistencia y la base de sus tradiciones","viven lejos del mar","no usan dinero","es una ley nueva"],why:"La naturaleza les da lo que necesitan y sostiene sus costumbres."},
  {t:1,type:"mc",q:"¿Cuál de estos animales vive en Baja California o cerca?",options:["Vaquita marina","Jaguar","Tucán","Mono araña"],why:"La vaquita marina vive solo en el Golfo de California."},
  {t:2,type:"order",q:"Ordena los modelos de desarrollo:",items:["Sistema agrario","Feudalismo","Sistema mercantilista","Capitalismo"],why:"Al Final Me Compré."},
  {t:2,type:"mc",q:"¿En qué modelo los campesinos pagaban tributo al dueño de las tierras?",options:["Feudalismo","Capitalismo","Mercantilismo","Sistema agrario"],why:"Al señor feudal."},
@@ -538,7 +555,7 @@ function home(){
       S.done.has(t.id)?h("span",{class:"ok"},"Lista ✓"):null)),
     h("button",{class:"play final",type:"button",onclick:()=>go("quiz")},
       h("span",{class:"n"},"★"),
-      h("span",{class:"t"},h("b",{},"Partido final: la pruebita"),h("span",{},"20 preguntas · ~10 min"+(S.best!=null?` · Mejor: ${S.best}/10`:""))))
+      h("span",{class:"t"},h("b",{},"Partido final: la pruebita"),h("span",{},`${QUIZ.length} preguntas · ~10 min`+(S.best!=null?` · Mejor: ${S.best}/10`:""))))
   );
   return [
     h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Primer trimestre · Ética, Naturaleza y Sociedades"),

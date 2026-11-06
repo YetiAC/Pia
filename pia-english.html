@@ -185,6 +185,7 @@ svg .emo{font-size:22px}
 .say{align-self:flex-start;border:2px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 12px;font-weight:800;font-size:15px;min-height:38px}
 .say.on{background:var(--ball);color:#fff;border-color:var(--ball)}
 .vs{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-weight:700;font-size:15px}
+body[data-spell="random"] .spellmodes [data-mode="random"],body[data-spell="September"] .spellmodes [data-mode="September"],body[data-spell="October"] .spellmodes [data-mode="October"],body[data-spell="November"] .spellmodes [data-mode="November"],body[data-spell="all"] .spellmodes [data-mode="all"]{background:var(--ball);border-color:var(--ball);color:#fff}
 .listen{align-self:flex-start;border:0;background:var(--navy);color:var(--navy-ink);border-radius:999px;padding:10px 18px;font-weight:800;font-size:17px;min-height:46px}
 
 </style>
@@ -329,7 +330,17 @@ const TOPICS = [
   <div class="card">
     <h3>🐝 How to play</h3>
     <p>Toca <b>🔊 Listen</b> para escuchar la palabra en inglés, y escríbela. Te damos su significado en español, la primera letra y cuántas letras tiene.</p>
-    <p class="hint">Cada vez que entras aquí salen 10 palabras diferentes de las 75 de las listas.</p>
+  </div>
+  <div class="card">
+    <h3>Elige qué practicar</h3>
+    <div class="bk spellmodes">
+      <button type="button" data-mode="random">🎲 10 al azar</button>
+      <button type="button" data-mode="September">September (25)</button>
+      <button type="button" data-mode="October">October (25)</button>
+      <button type="button" data-mode="November">November (25)</button>
+      <button type="button" data-mode="all">🐝 Las 75</button>
+    </div>
+    <p class="hint">Las palabras salen en desorden. Al cambiar de lista empiezas de nuevo.</p>
   </div>
   <div class="card">
     <h3>Tricky words ⚠️</h3>
@@ -362,6 +373,14 @@ let EN_VOICE=null;
 function pickEN(){ try{ const v=speechSynthesis.getVoices(); EN_VOICE=v.find(x=>/en[-_]US/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null; }catch(e){} }
 try{ pickEN(); speechSynthesis.onvoiceschanged=pickEN; }catch(e){}
 function sayEN(word){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(word); u.lang="en-US"; u.rate=0.8; if(EN_VOICE) u.voice=EN_VOICE; speechSynthesis.speak(u); }catch(e){} }
+
+/* ========== MODO DE SPELLING ========== */
+let SPELL_MODE="random";
+function spellSet(){ if(SPELL_MODE==="random") return pickWords(10); const src=SPELL_MODE==="all"?ALLW:WORDS[SPELL_MODE]; return shuf(src).map(spellQ); }
+document.body.dataset.spell=SPELL_MODE;
+document.addEventListener("click",e=>{ const b=e.target.closest(".spellmodes button"); if(!b) return;
+  SPELL_MODE=b.dataset.mode; document.body.dataset.spell=SPELL_MODE; render();
+  setTimeout(()=>{ const hs=document.querySelectorAll(".section-h"); const t=hs[hs.length-1]; if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); },60); });
 
 /* ========== ESTADO ========== */
 const S = {screen:"home", pts:0, earned:new Set(), done:new Set(), quiz:null, best:null};
@@ -508,7 +527,7 @@ function home(){
 
 function topic(id){
   const t=TOPICS[id-1];
-  const PR=(t.practice||pickWords(10)); const prac=PR.map((q,i)=>renderQ(q,`Calentamiento ${i+1} de ${PR.length}`,ok=>{
+  const PR=(t.practice||spellSet()); const prac=PR.map((q,i)=>renderQ(q,`Calentamiento ${i+1} de ${PR.length}`,ok=>{
     const key=`${id}-${i}`; if(ok&&!S.earned.has(key)){S.earned.add(key); addPts(2); return 2;} return 0;
   }));
   const next=id<5?h("button",{class:"btn",type:"button",onclick:()=>{S.done.add(id);save();go(id+1);}},`Siguiente: ${TOPICS[id].name} →`)
