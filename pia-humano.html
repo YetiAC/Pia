@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Pía: De lo Humano</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: one-column "cancha" — sticky scoreboard on top, one screen (jugada) at a time, big tap targets for phone */
+:root{
+  --bg:#edf1f7; --surface:#ffffff; --surface-2:#f5f7fb; --ink:#15213b; --muted:#56627a; --line:#d5dce8;
+  --ball:#e2611b; --ball-ink:#b9480b; --ball-soft:#fde7d8; --navy:#15213b; --navy-ink:#ffffff;
+  --good:#18864a; --good-soft:#dcf3e5; --bad:#c93838; --bad-soft:#fbe1e1; --tip:#fff4c2; --tip-ink:#5a4600;
+  --f-display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1322; --surface:#151f36; --surface-2:#1b2742; --ink:#edf1fa; --muted:#a2aec6; --line:#2a3757;
+  --ball:#ff8740; --ball-ink:#ffa46e; --ball-soft:#3a2416; --navy:#060b16; --navy-ink:#edf1fa;
+  --good:#43d083; --good-soft:#123323; --bad:#ff7a7a; --bad-soft:#3a1717; --tip:#3a3410; --tip-ink:#ffe680; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1322; --surface:#151f36; --surface-2:#1b2742; --ink:#edf1fa; --muted:#a2aec6; --line:#2a3757;
+  --ball:#ff8740; --ball-ink:#ffa46e; --ball-soft:#3a2416; --navy:#060b16; --navy-ink:#edf1fa;
+  --good:#43d083; --good-soft:#123323; --bad:#ff7a7a; --bad-soft:#3a1717; --tip:#3a3410; --tip-ink:#ffe680; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5;font-weight:500}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;line-height:1.1;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
+
+/* Marcador */
+.board{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--navy);color:var(--navy-ink);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+.board-in{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.board .who{font-family:var(--f-display);font-size:18px;letter-spacing:.04em;flex:1;min-width:0}
+.board .who small{display:block;font-family:var(--f-body);font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.7;font-weight:800}
+.score{font-family:var(--f-display);font-size:30px;background:#000;color:#ffb347;border-radius:8px;padding:2px 12px;min-width:72px;text-align:center;font-variant-numeric:tabular-nums;border:2px solid #2b3550}
+.score small{display:block;font-family:var(--f-body);font-size:9px;letter-spacing:.14em;color:#c6cde0;font-weight:800;margin-top:-4px}
+.score.bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.18)}}
+.dots{max-width:680px;margin:8px auto 0;display:flex;gap:6px}
+.dot{flex:1;height:30px;border-radius:6px;border:0;background:#24304d;color:#c6cde0;font-size:12px;font-weight:800}
+.dot.on{background:var(--ball);color:#fff}
+.dot.done{background:#2f6e4e;color:#fff}
+
+main{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--ball-ink)}
+.hero h1{font-size:clamp(34px,9vw,48px);color:var(--ink)}
+.hero p{color:var(--muted);margin-top:8px}
+.lead{font-size:18px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:22px}
+.card ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.big{font-family:var(--f-display);font-size:22px;color:var(--ball-ink)}
+.ex{background:var(--surface-2);border-left:4px solid var(--ball);border-radius:6px;padding:10px 12px;font-style:italic}
+.tip{background:var(--tip);color:var(--tip-ink);border-radius:12px;padding:12px 14px;display:block}
+.tip>b:first-of-type{font-family:var(--f-display);font-weight:400;font-size:18px;letter-spacing:.02em;display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2>div{background:var(--surface-2);border-radius:10px;padding:10px;min-width:0}
+.grid2 b{display:block;font-family:var(--f-display);font-weight:400;font-size:18px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--ball-soft);color:var(--ink);border-radius:999px;padding:3px 10px;font-weight:700;font-size:15px}
+.ref{font-family:ui-monospace,Menlo,monospace;font-size:14px;background:var(--surface-2);border-radius:8px;padding:10px;overflow-x:auto}
+
+.menu{display:flex;flex-direction:column;gap:10px}
+.play{display:flex;align-items:center;gap:14px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.play .n{width:44px;height:44px;flex:none;border-radius:50%;background:var(--ball);color:#fff;font-family:var(--f-display);font-size:22px;display:grid;place-items:center;
+  background-image:linear-gradient(transparent 47%,rgba(0,0,0,.35) 47% 53%,transparent 53%),linear-gradient(90deg,transparent 47%,rgba(0,0,0,.35) 47% 53%,transparent 53%)}
+.play .t{flex:1;min-width:0}
+.play .t b{display:block;font-size:18px}
+.play .t span{color:var(--muted);font-size:14px}
+.play.final{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+.play.final .t span{color:#c6cde0}
+.play .ok{color:var(--good);font-weight:800;font-size:14px}
+
+.section-h{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+.section-h h2{font-size:26px}
+.section-h span{color:var(--muted);font-size:14px}
+
+/* Preguntas */
+.q{background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.q .qt{font-weight:800;font-size:18px}
+.q .qn{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-weight:700;min-height:48px}
+.opt.sel{border-color:var(--ball);background:var(--ball-soft)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt[disabled]{cursor:default}
+.slots{display:flex;flex-direction:column;gap:6px;min-height:20px}
+.slot{display:flex;gap:10px;align-items:center;background:var(--ball-soft);border-radius:10px;padding:8px 12px;font-weight:700;border:0;text-align:left}
+.slot i{font-style:normal;font-family:var(--f-display);color:var(--ball-ink);font-size:18px;width:20px}
+.hint{font-size:14px;color:var(--muted)}
+.sortrow{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--surface-2);border:2px solid transparent}
+.sortrow.right{border-color:var(--good)}
+.sortrow.wrong{border-color:var(--bad)}
+.sortrow .it{font-weight:800}
+.bk{display:flex;flex-wrap:wrap;gap:6px}
+.bk button{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-weight:700;font-size:15px;min-height:40px}
+.bk button.sel{background:var(--ball);border-color:var(--ball);color:#fff}
+input.fill{font:inherit;font-size:18px;font-weight:700;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--surface-2);color:var(--ink);width:100%}
+.btn{border:0;border-radius:12px;padding:14px 18px;font-weight:800;font-size:17px;background:var(--ball);color:#fff;min-height:50px}
+.btn.alt{background:var(--surface);color:var(--ink);border:2px solid var(--line)}
+.btn.navy{background:var(--navy);color:var(--navy-ink)}
+.btn[disabled]{opacity:.45;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row .btn{flex:1 1 160px}
+.fb{border-radius:12px;padding:12px 14px;font-weight:600}
+.fb b{font-family:var(--f-display);font-weight:400;font-size:20px;display:block}
+.fb.good{background:var(--good-soft);color:var(--ink)}
+.fb.good b{color:var(--good)}
+.fb.bad{background:var(--bad-soft);color:var(--ink)}
+.fb.bad b{color:var(--bad)}
+.q.is-right{border-color:var(--good)}
+.q.is-wrong{border-color:var(--bad)}
+
+.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress div{height:100%;background:var(--ball);transition:width .3s}
+.result-big{font-family:var(--f-display);font-size:64px;line-height:1;color:var(--ball-ink);font-variant-numeric:tabular-nums}
+.miss{border-left:4px solid var(--bad);padding:8px 12px;background:var(--surface-2);border-radius:6px;display:flex;flex-direction:column;gap:4px}
+.miss .ans{color:var(--good);font-weight:800}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* --- Ilustraciones de Ciencias --- */
+:root{--skin:#f7d2b5; --skin-line:#d9a882; --lung:#f4a6b4; --heart:#d8323a; --art:#d8323a; --vein:#2f6fd6; --trach:#bcd7f2; --pale:#f0f4fa;
+  --st1:#2a8fc4; --st2:#5aa935; --st3:#ec7f2d; --st4:#6b3fa0; --fv:#4fa64a; --cer:#f2a33a; --leg:#d9534f; --ani:#b8322f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--skin:#d9b08f; --skin-line:#a77a57; --pale:#1e2a46; --trach:#7aa6d6}}
+:root[data-theme="dark"]{--skin:#d9b08f; --skin-line:#a77a57; --pale:#1e2a46; --trach:#7aa6d6}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.fig svg{width:100%;height:auto;max-width:420px;display:block}
+.fig figcaption,.fig .cap{font-size:14px;color:var(--muted);text-align:center}
+svg .skin{fill:var(--skin);stroke:var(--skin-line);stroke-width:2}
+svg .lung{fill:var(--lung);stroke:#c0607a;stroke-width:1.5}
+svg .heart{fill:var(--heart)}
+svg .art{stroke:var(--art);fill:none;stroke-width:3;stroke-linecap:round}
+svg .vein{stroke:var(--vein);fill:none;stroke-width:3;stroke-linecap:round}
+svg .trach{fill:var(--trach);stroke:#6f93b8;stroke-width:1.5}
+svg .lbl{fill:var(--ink);font:800 15px var(--f-body)}
+svg .lbl-s{fill:var(--muted);font:700 12px var(--f-body)}
+svg .lead{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .ink{fill:var(--ink)}
+svg .air-in{fill:var(--st1);font:800 12px var(--f-body)}
+svg .air-out{fill:var(--muted);font:800 12px var(--f-body)}
+svg .pulse{fill:var(--ball)}
+svg .pulse-ring{fill:none;stroke:var(--ball);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:ring 1.2s infinite}
+@keyframes ring{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.8);opacity:0}}
+svg .ecg{fill:none;stroke:var(--heart);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+svg .seg1{fill:var(--st1)} svg .seg2{fill:var(--st2)} svg .seg3{fill:var(--st3)} svg .seg4{fill:var(--st4)}
+svg .wht{fill:#fff;font:800 13px var(--f-body)}
+svg .fv{fill:var(--fv)} svg .cer{fill:var(--cer)} svg .leg{fill:var(--leg)} svg .ani{fill:var(--ani)}
+svg .plate-rim{fill:none;stroke:var(--line);stroke-width:6}
+svg .emo{font-size:22px}
+.calc{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--ball-soft);border-radius:12px;padding:12px}
+.calc input{width:90px;font:inherit;font-size:22px;font-weight:800;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.calc output{font-family:var(--f-display);font-size:26px;color:var(--ball-ink)}
+.formula{font-family:var(--f-display);font-size:30px;text-align:center;color:var(--ink);background:var(--surface-2);border-radius:12px;padding:10px}
+.formula span{color:var(--ball-ink)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0}
+.tile .ico{font-size:40px;line-height:1.1}
+.tile b{font-size:15px}
+.tile span{font-size:13px;color:var(--muted)}
+.stage{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;background:var(--surface-2);border-radius:12px;padding:10px}
+.stage .ico{font-size:40px;line-height:1;text-align:center}
+.stage b{font-family:var(--f-display);font-weight:400;font-size:20px}
+.stage ul{margin:4px 0 0;padding-left:18px;font-size:15px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-weight:700;font-size:15px}
+.vs .y{background:var(--good-soft);border-radius:10px;padding:8px}
+.vs .n{background:var(--bad-soft);border-radius:10px;padding:8px;text-decoration:line-through;text-decoration-color:var(--bad)}
+.fix{background:var(--bad-soft);border-radius:12px;padding:12px 14px;display:block}
+.fix>b:first-of-type{font-family:var(--f-display);font-weight:400;font-size:18px;color:var(--bad);display:block;margin-bottom:4px}
+
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center;margin:0}
+.fig svg{width:100%;height:auto;max-width:360px;display:block}
+.fig figcaption{font-size:15px;color:var(--muted);text-align:center}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0}
+.tile .ico{font-size:40px;line-height:1.1}
+.tile b{font-size:17px}
+.tile span{font-size:14px;color:var(--muted)}
+.pair{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;background:var(--surface-2);border-radius:12px;padding:10px;font-weight:700;font-size:16px}
+.pair .p{color:var(--bad)} .pair .s{color:var(--good)} .pair .to{font-size:22px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-weight:700;font-size:15px}
+.pair{grid-template-columns:1fr auto 1.2fr}
+
+</style>
+</head>
+<body>
+
+<header class="board">
+  <div class="board-in">
+    <div class="who"><small>De lo Humano y lo Comunitario · 5°</small>PÍA</div>
+    <div class="score" id="score">0<small>PUNTOS</small></div>
+  </div>
+  <nav class="dots" id="dots" aria-label="Jugadas"></nav>
+</header>
+<main id="app"></main>
+
+<script>
+/* ========== De lo Humano y lo Comunitario · 5° ========== */
+const TOPICS = [
+{ id:1, name:"Convivencia familiar", pages:"pág. 172", time:"5 min",
+  learn:`
+  <div class="card">
+    <h3>La familia es la base 🏠</h3>
+    <p class="lead">En la familia se construyen la <b>autoestima</b> y la <b>identidad</b> de niños, niñas y adolescentes.</p>
+    <p>Ahí nos enseñan <b>valores</b> y nos <b>protegen</b> para tener un desarrollo <b>físico, emocional, psicológico y social</b>.</p>
+    <p>Cada persona es <b>única y original</b>, por eso es natural que en una familia haya <b>distintas maneras de pensar</b>.</p>
+  </div>
+  <div class="card">
+    <h3>La lectura de Lorenzo y su abuelo 🌳</h3>
+    <p>El abuelo dice que <b>la familia es la base de un gran país</b>. En familia aprendemos a:</p>
+    <div class="chips"><span class="chip">hablar con la verdad</span><span class="chip">ser rectos</span><span class="chip">colaborar</span><span class="chip">compartir</span><span class="chip">distinguir el bien del mal</span><span class="chip">respetar las reglas</span></div>
+    <p class="ex">“Los niños aprenden de lo que los adultos <b>decimos</b>, pero también de lo que <b>callamos</b> y de lo que <b>hacemos</b>.”</p>
+  </div>
+  <div class="card">
+    <h3>Respuestas para tu examen</h3>
+    <ul>
+      <li><b>¿Por qué es importante la actitud?</b> Porque los niños aprenden con el <b>ejemplo</b>: de lo que los adultos hacen, no solo de lo que dicen. Una buena actitud ayuda a convivir en armonía.</li>
+      <li><b>¿Por qué respetar las reglas desde la familia?</b> Porque así aprendemos a <b>convivir en paz</b> y después sabemos respetar las reglas de la escuela y de la sociedad.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>¿Fortalece o no la convivencia?</h3>
+    <div class="vs"><span class="y">🎲 Jugar juntos juegos de mesa</span><span class="n">😠 No hablarle a los demás si estamos enojados</span><span class="y">🧹 Hacer entre todos las tareas de la casa</span><span class="n">📺 Ver televisión mientras desayunamos</span><span class="y">📖 Leer juntos</span><span class="y">🍽️ Platicar sobre nuestro día mientras comemos</span></div>
+    <p>También ayuda: <b>expresar cariño</b>, <b>celebrar fechas importantes</b> y <b>dialogar</b> para solucionar conflictos.</p>
+  </div>
+  <div class="fix"><b>Ojo, Pía</b>A “tres cosas que aprendemos en familia” contestaste “compartir, la verdad y la actitud”. La actitud no es algo que se aprende ahí. Mejor: <b>compartir</b>, <b>hablar con la verdad</b> y <b>colaborar</b> (o respetar las reglas).</div>`,
+  practice:[
+    {type:"multi", q:"Según la lectura, ¿qué aprendemos en familia? Toca todas:", right:["Hablar con la verdad","Colaborar","Compartir","Respetar las reglas"], wrong:["Ver mucha televisión","Pelear para ganar"], why:"También ser rectos y distinguir el bien del mal."},
+    {type:"sort", q:"¿Fortalece el afecto en la familia o no?", buckets:["Sí ✓","No ✗"],
+      items:[["Jugar juegos de mesa juntos",0],["Ver televisión mientras desayunamos",1],["Realizar entre todos las tareas de la casa",0],["No hablarle a los demás si estamos enojados",1],["Platicar sobre nuestro día mientras comemos",0]],
+      why:"Lo que nos une y nos hace platicar fortalece; lo que nos aísla, no."},
+    {type:"mc", q:"Según el abuelo, los niños aprenden de lo que los adultos…", options:["dicen, callan y hacen","solo dicen","ven en la tele","escriben en el celular"], why:"Aprendemos con el ejemplo."}
+  ]},
+{ id:2, name:"Solución de conflictos", pages:"pág. 173", time:"6 min",
+  learn:`
+  <div class="card">
+    <h3>¿Qué es un conflicto? ⚡</h3>
+    <p class="lead">Es un <b>desacuerdo, una lucha o una disputa</b> entre dos o más personas, porque sus <b>posiciones, intereses, necesidades o valores</b> no son comprendidos.</p>
+  </div>
+  <div class="card">
+    <h3>Comunicación asertiva 🗣️</h3>
+    <p>Es decir lo que piensas y sientes <b>con respeto</b>, sin gritar ni ofender, y <b>escuchando</b> al otro. Es la estrategia para resolver conflictos de manera <b>pacífica</b>.</p>
+    <p class="ex">“Me sentí mal cuando tomaste mi goma sin pedirla. ¿Me la puedes pedir la próxima vez?”</p>
+  </div>
+  <div class="card">
+    <h3>La frase del examen ✍️</h3>
+    <p class="ex">La resolución de <b>conflictos</b> implica considerar diferentes <b>alternativas</b> y evaluar las <b>consecuencias</b> de cada una. Es importante buscar <b>soluciones</b> que protejan la <b>integridad</b> emocional y física de las personas involucradas.</p>
+    <p class="hint">Orden de las palabras: conflictos → alternativas → consecuencias → soluciones → integridad</p>
+  </div>
+  <div class="fix"><b>Ojo, Pía</b>En tu libro escribiste “alternativas” dos veces. El cuarto espacio (“Es importante buscar ___”) es <b>soluciones</b>.</div>
+  <div class="card">
+    <h3>Conflicto → alternativa de solución</h3>
+    <div class="pair"><span class="p" style="color:var(--ink)">🎭 A Néstor le da pena actuar en el festival</span><span class="to">→</span><span class="s">participar en la decoración y escenografía</span></div>
+    <div class="pair"><span class="p" style="color:var(--ink)">⚽ Luis y Renato no terminaron su proyecto</span><span class="to">→</span><span class="s">terminarlo en casa y entregarlo al día siguiente</span></div>
+    <div class="pair"><span class="p" style="color:var(--ink)">🚌 El grupo quiere ir a lugares diferentes</span><span class="to">→</span><span class="s">someterlo a votación</span></div>
+  </div>
+  <div class="tip"><b>Pasos de cancha para resolver un conflicto</b>1. Calmarse · 2. Dialogar y escuchar · 3. Pensar alternativas · 4. Evaluar consecuencias · 5. Elegir la solución que cuide a todos.</div>`,
+  practice:[
+    {type:"order", q:"Completa la frase en orden: La resolución de ___ implica considerar diferentes ___ y evaluar las ___ de cada una. Es importante buscar ___ que protejan la ___.", items:["conflictos","alternativas","consecuencias","soluciones","integridad"], why:"Conflictos → alternativas → consecuencias → soluciones → integridad."},
+    {type:"sort", q:"Une cada conflicto con su solución:", buckets:["Votación","Decoración","Terminar en casa"],
+      items:[["Todos quieren ir de excursión a lugares diferentes",0],["A Néstor le da pena actuar en público",1],["Luis y Renato no terminaron el proyecto",2]],
+      why:"Votar decide entre todos; participar de otra forma; cumplir con la tarea."},
+    {type:"mc", q:"¿Cuál es un ejemplo de comunicación ASERTIVA?", options:["“Me molestó que tomaras mi lápiz; pídemelo la próxima vez, por favor.”","“¡Eres un ladrón, devuélvemelo!”","No decir nada y enojarse","Acusarlo con todos"], why:"Decir lo que sientes con respeto."}
+  ]},
+{ id:3, name:"Experiencias de estudio", pages:"pág. 174", time:"4 min",
+  learn:`
+  <div class="card">
+    <h3>¿Qué son? 🎒</h3>
+    <p class="lead">Son todos los <b>estudios, vivencias, emociones y experiencias</b> que tiene un alumno en la escuela, desde que empieza hasta que termina.</p>
+    <p>Hay que tener claros tus <b>objetivos</b> para aprender lo necesario y lograr tus <b>metas</b>.</p>
+  </div>
+  <div class="card">
+    <h3>Metas a corto, mediano y largo plazo 🎯</h3>
+    <div class="tiles" style="grid-template-columns:1fr">
+      <div class="tile"><span class="ico">🏀</span><b>Corto plazo</b><span>días o semanas: sacar 10 en el examen, mejorar mis tiros libres</span></div>
+      <div class="tile"><span class="ico">🏆</span><b>Mediano plazo</b><span>meses o un año: entrar al equipo de la escuela, terminar 5° con buen promedio</span></div>
+      <div class="tile"><span class="ico">👩‍🔧</span><b>Largo plazo</b><span>muchos años: ser ingeniera</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Tu sueño: ingeniería y básquetbol 🏀👩‍🔧</h3>
+    <p>Áreas de conocimiento que te sirven:</p>
+    <div class="chips"><span class="chip">➕ Matemáticas</span><span class="chip">🧲 Física</span><span class="chip">⚗️ Química</span><span class="chip">🏃 Educación Física</span><span class="chip">🍃 Biología</span></div>
+    <p>En Tijuana también puedes estudiar ingeniería, por ejemplo en la <b>UABC</b> o en el <b>Tecnológico de Tijuana</b>.</p>
+    <p><b>¿Quiénes te ayudan?</b> Tu familia, tus maestros y tus entrenadores.</p>
+  </div>`,
+  practice:[
+    {type:"mc", q:"Las experiencias de estudio son…", options:["todos los estudios, vivencias y emociones de un alumno en la escuela","solo las calificaciones","los recreos","las vacaciones"], why:"Desde que inicia hasta que termina."},
+    {type:"sort", q:"¿Meta a corto, mediano o largo plazo?", buckets:["Corto","Mediano","Largo"],
+      items:[["Sacar 10 en el examen de esta semana",0],["Entrar al equipo de básquet este año",1],["Ser ingeniera",2]],
+      why:"Corto = días · Mediano = meses · Largo = años."},
+    {type:"multi", q:"Para ser ingeniera, ¿qué áreas de conocimiento te sirven más?", right:["Matemáticas","Física","Química"], wrong:["Historia del arte","Música"], why:"La ingeniería usa mucho números y ciencias."}
+  ]},
+{ id:4, name:"Entendimiento mutuo y empatía", pages:"pág. 175", time:"5 min",
+  learn:`
+  <div class="card">
+    <h3>Empatía 👟👟</h3>
+    <p class="lead">Es la capacidad de <b>comprender los sentimientos y emociones</b> de otras personas: <b>ponerte en sus zapatos</b>.</p>
+  </div>
+  <div class="card">
+    <h3>Entendimiento mutuo 👂🤝</h3>
+    <p>Para entendernos se necesitan <b>dos cosas</b>: <b>comunicación asertiva</b> y <b>empatía</b>. También es importante promover la <b>inclusión</b>.</p>
+    <p>Frases que ayudan:</p>
+    <div class="chips"><span class="chip">“Te entiendo, pero…”</span><span class="chip">“Comprendo lo que dices”</span><span class="chip">“Yo creo que…”</span></div>
+  </div>
+  <div class="card">
+    <h3>Los casos del señor Oreja 👂</h3>
+    <div class="vs">
+      <span class="n" style="text-decoration:none">❌ A · Fernanda ve la tele y no escucha a su mamá</span>
+      <span class="y">✅ B · José y Laura se escuchan y se dan consejos</span>
+      <span class="n" style="text-decoration:none">❌ C · Los papás de Eduardo están en el celular y no lo escuchan</span>
+      <span class="y">✅ D · En el debate todos hablan, escuchan y argumentan</span>
+    </div>
+    <p><b>¿Qué pudieron cambiar?</b> En A, Fernanda pudo <b>apagar la tele y escuchar</b> a su mamá. En C, los papás pudieron <b>dejar el celular y poner atención</b> a Eduardo.</p>
+  </div>`,
+  practice:[
+    {type:"mc", q:"La empatía es…", options:["comprender los sentimientos de los demás, ponerse en sus zapatos","hablar más fuerte que los demás","ganar siempre una discusión","no escuchar"], why:"Ponerte en el lugar del otro."},
+    {type:"sort", q:"¿Hay entendimiento mutuo?", buckets:["Sí","No"],
+      items:[["José y Laura se escuchan y se dan consejos",0],["Fernanda ve la tele mientras su mamá le habla",1],["Los papás de Eduardo miran el celular mientras él cuenta algo",1],["En el debate todos se escuchan y argumentan",0]],
+      why:"Hay entendimiento cuando se escuchan y se ponen atención."},
+    {type:"mc", q:"¿Qué dos cosas se necesitan para el entendimiento mutuo?", options:["Comunicación asertiva y empatía","Gritos y enojo","Celular y televisión","Silencio y distancia"], why:"Hablar con respeto y comprender al otro."}
+  ]}
+];
+
+const QUIZ = [
+ {t:1,type:"mc",q:"En la familia se construyen la autoestima y…",options:["la identidad","la economía","el clima","las calificaciones"],why:"Autoestima e identidad."},
+ {t:1,type:"mc",q:"¿Por qué es natural que en una familia haya distintas maneras de pensar?",options:["Porque cada persona es única y original","Porque nadie se quiere","Porque está prohibido estar de acuerdo","Porque viven en casas distintas"],why:"Cada persona es única."},
+ {t:1,type:"mc",q:"¿Cuál actividad fortalece la convivencia familiar?",options:["Platicar sobre nuestro día mientras comemos","Ver televisión mientras desayunamos","No hablarle a nadie si estamos enojados","Comer cada quien en su cuarto"],why:"Platicar une a la familia."},
+ {t:1,type:"mc",q:"Según la lectura, ¿qué es la base de un gran país?",options:["La familia","La economía","El dinero","La televisión"],why:"Lo dijo el abuelo de Lorenzo."},
+ {t:2,type:"mc",q:"Un conflicto es…",options:["un desacuerdo o disputa entre dos o más personas","un juego","un examen","una fiesta"],why:"Porque sus posiciones o intereses no se entienden."},
+ {t:2,type:"mc",q:"La estrategia para resolver conflictos de manera pacífica es…",options:["la comunicación asertiva","gritar más fuerte","ignorar al otro","acusar con todos"],why:"Hablar con respeto y escuchar."},
+ {t:2,type:"fill",q:"Es importante buscar soluciones que protejan la ________ emocional y física de las personas.",accept:["integridad"],answer:"integridad",why:"Integridad = estar bien, sin daño."},
+ {t:2,type:"mc",q:"Antes de elegir una solución, debemos evaluar las…",options:["consecuencias de cada alternativa","calificaciones","reglas del básquet","ropa de cada uno"],why:"Pensar qué pasaría con cada opción."},
+ {t:2,type:"mc",q:"El grupo no se pone de acuerdo a dónde ir de excursión. La mejor solución es…",options:["someterlo a votación","que el más fuerte decida","no ir","pelear"],why:"Votar es justo para todos."},
+ {t:3,type:"mc",q:"Las experiencias de estudio van…",options:["desde que inicias en la escuela hasta que terminas","solo en vacaciones","solo un día","solo en exámenes"],why:"Todo el trayecto escolar."},
+ {t:3,type:"mc",q:"“Ser ingeniera” es una meta a…",options:["largo plazo","corto plazo","mediano plazo","ningún plazo"],why:"Toma muchos años."},
+ {t:3,type:"mc",q:"Para lograr tus metas es necesario…",options:["tener claros tus objetivos","no estudiar","esperar a que pasen solas","copiar"],why:"Objetivos claros → conocimientos → metas."},
+ {t:4,type:"mc",q:"Ponerte en los zapatos de otra persona se llama…",options:["empatía","conflicto","autoestima","economía"],why:"Empatía."},
+ {t:4,type:"mc",q:"¿En cuál caso NO hay entendimiento mutuo?",options:["Los papás miran el celular mientras su hijo les cuenta algo","Dos amigos se escuchan y se aconsejan","En un debate todos se escuchan","Una mamá escucha a su hija"],why:"No le pusieron atención."},
+ {t:4,type:"mc",q:"¿Qué frase ayuda al entendimiento mutuo?",options:["“Te entiendo, pero yo creo que…”","“Cállate, no sabes nada”","“No me importa”","“Siempre tienes la culpa”"],why:"Es asertiva y respetuosa."},
+ {t:4,type:"mc",triple:true,q:"TIRO DE 3: Fernanda veía la tele mientras su mamá le contaba algo. ¿Qué debió hacer?",options:["Apagar la tele, mirarla y escucharla","Subirle el volumen","Irse a su cuarto","Seguir riéndose del programa"],why:"Poner atención es empatía."}
+];
+
+const QUIZ2 = [
+ {t:1,type:"mc",q:"La familia nos protege para tener un desarrollo…",options:["físico, emocional, psicológico y social","solo físico","solo económico","solo escolar"],why:"Los cuatro."},
+ {t:1,type:"mc",q:"¿Por qué es importante aprender a respetar las reglas desde la familia?",options:["Para convivir en paz y luego respetar las reglas de la escuela y la sociedad","Para que nadie juegue","Porque los adultos siempre ganan","No es importante"],why:"La familia nos prepara para la vida en sociedad."},
+ {t:1,type:"mc",q:"“Los niños aprenden de lo que callamos y de lo que hacemos.” Esto quiere decir que…",options:["el ejemplo de los adultos enseña mucho","los niños no escuchan","hay que callarse siempre","solo importa lo que se dice"],why:"Aprendemos con el ejemplo."},
+ {t:2,type:"order",q:"Ordena los pasos para resolver un conflicto:",items:["Calmarse","Dialogar y escuchar","Pensar alternativas","Evaluar consecuencias","Elegir la solución que cuide a todos"],why:"Primero calma, al final eliges."},
+ {t:2,type:"mc",q:"Un conflicto ocurre porque las posiciones, intereses, necesidades o ______ de las personas no se entienden.",options:["valores","calificaciones","ropas","mascotas"],why:"Posiciones, intereses, necesidades o valores."},
+ {t:2,type:"mc",q:"A Néstor le da pena actuar en público. ¿Cuál alternativa protege su integridad emocional?",options:["Que participe en la decoración del festival","Obligarlo a actuar","Burlarse para que se le quite","Sacarlo del grupo"],why:"Participa sin pasar un mal rato."},
+ {t:2,type:"mc",q:"¿Cuál NO es comunicación asertiva?",options:["Gritarle a tu compañero para que te entienda","Decir cómo te sientes con respeto","Escuchar sin interrumpir","Proponer una solución"],why:"Gritar no es respetuoso."},
+ {t:3,type:"sort",q:"¿Corto, mediano o largo plazo?",buckets:["Corto","Mediano","Largo"],items:[["Terminar la tarea de hoy",0],["Aprender a tocar un instrumento este año",1],["Terminar una carrera universitaria",2]],why:"Días · meses · años."},
+ {t:3,type:"mc",q:"Si quieres ser ingeniera y basquetbolista, ¿qué combinación de materias te ayuda más?",options:["Matemáticas, física y educación física","Solo historia","Solo música","Ninguna"],why:"Ingeniería usa ciencias; el básquet, educación física."},
+ {t:4,type:"mc",q:"Además de la comunicación asertiva y la empatía, para el entendimiento mutuo es importante promover la…",options:["inclusión","competencia","distancia","burla"],why:"Que todos participen y sean aceptados."},
+ {t:4,type:"mc",q:"Eduardo se fue triste a su cuarto porque sus papás estaban en el celular. ¿Qué faltó?",options:["Empatía y atención","Más celulares","Más tiempo de pantalla","Que Eduardo no hablara"],why:"Faltó escucharlo."},
+ {t:4,type:"mc",triple:true,q:"TIRO DE 3: En el debate de 5°, ¿por qué SÍ hubo entendimiento mutuo?",options:["Porque se organizaron para hablar, escucharse y argumentar con frases respetuosas","Porque ganó el que gritó más","Porque nadie habló","Porque todos pensaban igual"],why:"Usaron frases como “Te entiendo, pero…”."}
+];
+let QA = QUIZ;
+function goQuiz(set){ QA = set; go("quiz"); }
+
+/* ========== ESTADO ========== */
+const S = {screen:"home", pts:0, earned:new Set(), done:new Set(), quiz:null, best:null};
+try{ const d=JSON.parse(localStorage.getItem("pia-dhc")||"{}"); if(d.done) S.done=new Set(d.done); if(d.best!=null) S.best=d.best; }catch(e){}
+function save(){ try{ localStorage.setItem("pia-dhc", JSON.stringify({done:[...S.done], best:S.best})); }catch(e){} }
+
+const $app=document.getElementById("app"), $score=document.getElementById("score"), $dots=document.getElementById("dots");
+function h(tag, attrs={}, ...kids){ const e=document.createElement(tag); for(const[k,v] of Object.entries(attrs)){ if(k==="class") e.className=v; else if(k==="html") e.innerHTML=v; else if(k.startsWith("on")) e.addEventListener(k.slice(2),v); else e.setAttribute(k,v);} for(const c of kids.flat()){ if(c==null) continue; e.append(c.nodeType?c:document.createTextNode(c)); } return e; }
+const shuffle=a=>{a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;};
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-zñ ]/g,"").replace(/\s+/g," ").trim();
+
+function addPts(n){ S.pts+=n; $score.firstChild.nodeValue=S.pts; $score.classList.remove("bump"); void $score.offsetWidth; $score.classList.add("bump"); }
+
+const GOOD=["¡Canasta!","¡Swish! Ni tocó el aro","¡Buen tiro!","¡Así se juega!","¡Encestaste!"];
+const BAD=["Rebotó en el aro","Casi, casi","Tiro fallado, ¡a la siguiente!"];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function feedback(ok, why, pts){
+  return h("div",{class:"fb "+(ok?"good":"bad"), role:"status"}, h("b",{}, ok?pick(GOOD)+(pts?`  +${pts}`:""):pick(BAD)), why);
+}
+
+/* ========== MOTOR DE PREGUNTAS ========== */
+function renderQ(q, label, onResult){
+  const box=h("div",{class:"q"});
+  if(label) box.append(h("div",{class:"qn"},label));
+  box.append(h("div",{class:"qt"},q.q));
+  const finish=(ok, extra)=>{ box.classList.add(ok?"is-right":"is-wrong"); const pts=onResult(ok); box.append(feedback(ok, (extra?extra+" ":"")+(q.why||""), pts)); };
+
+  if(q.type==="mc"){
+    const opts=h("div",{class:"opts"});
+    const items=shuffle(q.options.map((t,i)=>({t,ok:i===0})));
+    items.forEach(it=>{
+      const b=h("button",{class:"opt",type:"button",onclick:()=>{
+        [...opts.children].forEach((c,i)=>{c.disabled=true; if(items[i].ok) c.classList.add("right");});
+        if(!it.ok) b.classList.add("wrong");
+        finish(it.ok);
+      }}, it.t);
+      opts.append(b);
+    });
+    box.append(opts);
+  }
+
+  if(q.type==="multi"){
+    box.append(h("div",{class:"hint"},"Puedes tocar varias. Luego toca “Revisar”."));
+    const opts=h("div",{class:"opts"});
+    const items=shuffle([...q.right.map(t=>({t,ok:true})),...q.wrong.map(t=>({t,ok:false}))]);
+    const sel=new Set();
+    items.forEach((it,i)=>{ const b=h("button",{class:"opt",type:"button","aria-pressed":"false",onclick:()=>{ if(sel.has(i)){sel.delete(i);b.classList.remove("sel");b.setAttribute("aria-pressed","false");} else {sel.add(i);b.classList.add("sel");b.setAttribute("aria-pressed","true");} }}, it.t); opts.append(b); });
+    const chk=h("button",{class:"btn",type:"button",onclick:()=>{
+      chk.disabled=true; let ok=true;
+      items.forEach((it,i)=>{ const b=opts.children[i]; b.disabled=true; b.classList.remove("sel");
+        if(it.ok&&sel.has(i)) b.classList.add("right"); else if(it.ok){b.classList.add("right"); ok=false;} else if(sel.has(i)){b.classList.add("wrong"); ok=false;} });
+      finish(ok, ok?"":"Las verdes son las correctas.");
+    }},"Revisar");
+    box.append(opts, chk);
+  }
+
+  if(q.type==="order"){
+    box.append(h("div",{class:"hint"},"Toca en el orden correcto. Si te equivocas, toca un paso de arriba para quitarlo."));
+    const slots=h("div",{class:"slots"}), pool=h("div",{class:"opts"});
+    const items=shuffle(q.items); const chosen=[];
+    const chk=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{
+      chk.disabled=true; [...pool.children].forEach(b=>b.disabled=true);
+      const ok=chosen.every((t,i)=>t===q.items[i]);
+      [...slots.children].forEach((s,i)=>{ s.disabled=true; s.style.background=`var(${chosen[i]===q.items[i]?"--good-soft":"--bad-soft"})`; });
+      finish(ok, ok?"":"Orden correcto: "+q.items.join(" → ")+".");
+    }},"Revisar");
+    const draw=()=>{ slots.replaceChildren(...chosen.map((t,i)=>h("button",{class:"slot",type:"button",onclick:()=>{chosen.splice(i,1); draw();}}, h("i",{},String(i+1)), t)));
+      pool.replaceChildren(...items.filter(t=>!chosen.includes(t)).map(t=>h("button",{class:"opt",type:"button",onclick:()=>{chosen.push(t); draw();}},t)));
+      if(chosen.length===q.items.length) chk.removeAttribute("disabled"); else chk.setAttribute("disabled",""); };
+    draw(); box.append(slots,pool,chk);
+  }
+
+  if(q.type==="sort"){
+    const rows=h("div",{class:"opts"}); const ans=[];
+    const items=shuffle(q.items);
+    const chk=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{
+      chk.disabled=true; let ok=true;
+      items.forEach(([t,b],i)=>{ const r=rows.children[i]; const good=ans[i]===b; if(!good) ok=false; r.classList.add(good?"right":"wrong");
+        r.querySelectorAll(".bk button").forEach((x,j)=>{x.disabled=true; if(!good&&j===b){x.style.borderColor="var(--good)";}}); });
+      finish(ok, ok?"":"El borde verde marca la respuesta correcta.");
+    }},"Revisar");
+    items.forEach(([t],i)=>{
+      const bk=h("div",{class:"bk"});
+      q.buckets.forEach((name,j)=>bk.append(h("button",{type:"button",onclick:(e)=>{ ans[i]=j; bk.querySelectorAll("button").forEach(x=>x.classList.remove("sel")); e.currentTarget.classList.add("sel");
+        if(ans.filter(x=>x!=null).length===items.length) chk.removeAttribute("disabled"); }},name)));
+      rows.append(h("div",{class:"sortrow"}, h("div",{class:"it"},t), bk));
+    });
+    box.append(rows,chk);
+  }
+
+  if(q.type==="fill"){
+    const id="f"+Math.random().toString(36).slice(2,8);
+    const inp=h("input",{class:"fill",id,type:"text",autocomplete:"off",autocapitalize:"off",spellcheck:"false",placeholder:"Escribe tu respuesta","aria-label":"Tu respuesta"});
+    const go=()=>{ if(!inp.value.trim()) return; inp.disabled=true; chk.disabled=true;
+      const ok=q.accept.some(a=>norm(a)===norm(inp.value)); inp.style.borderColor=`var(${ok?"--good":"--bad"})`;
+      finish(ok, ok?"":`La respuesta es: “${q.answer}”.`); };
+    const chk=h("button",{class:"btn",type:"button",onclick:go},"Revisar");
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter") go();});
+    box.append(inp,chk);
+  }
+  return box;
+}
+
+/* ========== PANTALLAS ========== */
+const SCREENS=["home",...TOPICS.map(t=>t.id),"quiz"];
+function drawDots(){
+  $dots.replaceChildren(...SCREENS.map(s=>{
+    const lab=s==="home"?"Inicio":s==="quiz"?"Final":String(s);
+    const on=S.screen===s || (s==="quiz"&&S.screen==="results");
+    return h("button",{class:"dot"+(on?" on":(S.done.has(s)?" done":"")),type:"button","aria-label":s==="home"?"Inicio":s==="quiz"?"Partido final":"Jugada "+s,onclick:()=>go(s)},lab);
+  }));
+}
+function go(s){ S.screen=s; if(s==="quiz") S.quiz=null; render(); window.scrollTo({top:0}); }
+
+function home(){
+  const menu=h("div",{class:"menu"},
+    TOPICS.map(t=>h("button",{class:"play",type:"button",onclick:()=>go(t.id)},
+      h("span",{class:"n"},String(t.id)),
+      h("span",{class:"t"},h("b",{},t.name),h("span",{},`${t.pages} · ${t.time}`)),
+      S.done.has(t.id)?h("span",{class:"ok"},"Lista ✓"):null)),
+    h("button",{class:"play final",type:"button",onclick:()=>goQuiz(QUIZ)},
+      h("span",{class:"n"},"1"),
+      h("span",{class:"t"},h("b",{},"Partido 1: la pruebita"),h("span",{},`${QUIZ.length} preguntas · ~8 min`+(S.best!=null?` · Mejor: ${S.best}/10`:"")))),
+    h("button",{class:"play final",type:"button",onclick:()=>goQuiz(QUIZ2)},
+      h("span",{class:"n"},"2"),
+      h("span",{class:"t"},h("b",{},"Partido 2: más difícil 🔥"),h("span",{},`${QUIZ2.length} preguntas nuevas · ~6 min`)))
+  );
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Primer trimestre · De lo Humano y lo Comunitario"),
+      h("h1",{},"¡A la cancha, Pía!"),
+      h("p",{class:"lead"},"Hoy vas a jugar 4 jugadas para repasar el examen de De lo Humano y lo Comunitario. Toca 🔊 para escuchar. En cada una lees un poco y luego tiras a la canasta con unas preguntas.")),
+    h("div",{class:"card"},
+      h("h3",{},"Cómo se juega"),
+      h("ul",{},
+        h("li",{},"Cada respuesta correcta es una ",h("b",{},"canasta de 2 puntos"),"."),
+        h("li",{},"La última pregunta del partido final es un ",h("b",{},"tiro de 3"),"."),
+        h("li",{},"Si fallas, lee la explicación: así se aprende de verdad."))),
+    h("div",{class:"section-h"},h("h2",{},"Las jugadas"),h("span",{},"tócalas en orden")),
+    menu
+  ];
+}
+
+function topic(id){
+  const t=TOPICS[id-1];
+  const prac=t.practice.map((q,i)=>renderQ(q,`Calentamiento ${i+1} de ${t.practice.length}`,ok=>{
+    const key=`${id}-${i}`; if(ok&&!S.earned.has(key)){S.earned.add(key); addPts(2); return 2;} return 0;
+  }));
+  const next=id<TOPICS.length?h("button",{class:"btn",type:"button",onclick:()=>{S.done.add(id);save();go(id+1);}},`Siguiente: ${TOPICS[id].name} →`)
+                 :h("button",{class:"btn navy",type:"button",onclick:()=>{S.done.add(id);save();go("quiz");}},"¡Al partido final! →");
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},`Jugada ${id} de ${TOPICS.length} · ${t.pages}`), h("h1",{},t.name)),
+    h("div",{html:t.learn, style:"display:flex;flex-direction:column;gap:14px"}),
+    h("div",{class:"section-h"},h("h2",{},"Calentamiento"),h("span",{},"+2 por canasta")),
+    prac,
+    h("div",{class:"row"}, h("button",{class:"btn alt",type:"button",onclick:()=>go("home")},"← Menú"), next)
+  ];
+}
+
+function quiz(){
+  if(!S.quiz) S.quiz={i:0, pts:0, max:QA.reduce((a,q)=>a+(q.triple?3:2),0), correct:0, misses:[], answered:false};
+  const Z=S.quiz, q=QA[Z.i];
+  const pb=h("div",{class:"progress"},h("div",{style:`width:${(Z.i/QA.length)*100}%`}));
+  const nextBtn=h("button",{class:"btn",type:"button",disabled:"",onclick:()=>{ Z.i++; Z.answered=false; if(Z.i>=QA.length){S.screen="results";} render(); window.scrollTo({top:0}); }}, Z.i===QA.length-1?"Ver mi resultado →":"Siguiente pregunta →");
+  const card=renderQ(q, `Pregunta ${Z.i+1} de ${QA.length}${q.triple?" · vale 3":""}`, ok=>{
+    Z.answered=true; nextBtn.removeAttribute("disabled");
+    if(ok){ const p=q.triple?3:2; Z.pts+=p; Z.correct++; addPts(p); return p; }
+    Z.misses.push(q); return 0;
+  });
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Partido final"), h("h1",{},QA===QUIZ2?"Partido 2 🔥":"La pruebita"),
+      h("p",{},`Marcador del partido: ${Z.pts} de ${Z.max} puntos`)),
+    pb, card, nextBtn
+  ];
+}
+
+function results(){
+  const Z=S.quiz; const cal=Math.round((Z.pts/Z.max)*100)/10;
+  const calTxt=cal.toFixed(1).replace(".0","");
+  if(S.best==null||cal>S.best){S.best=Number(calTxt);save();}
+  const msg= cal>=9?"¡Eres la MVP del partido! Vas lista para el examen.":
+             cal>=7?"¡Muy buen partido! Repasa las que fallaste y quedas lista.":
+                    "Buen esfuerzo. Repasa las jugadas de abajo y vuelve a jugar el partido.";
+  const missTopics=[...new Set(Z.misses.map(q=>q.t))];
+  const ansOf=q=>q.type==="mc"?q.options[0]:q.type==="order"?q.items.join(" → "):q.type==="fill"?q.answer:q.items.map(([t,b])=>`${q.buckets[b]}: ${t.toLowerCase()}`).join(" · ");
+  return [
+    h("section",{class:"hero"}, h("div",{class:"eyebrow"},"Final del partido"), h("h1",{},"Tu resultado")),
+    h("div",{class:"card"},
+      h("div",{class:"result-big"},`${calTxt}`, h("span",{style:"font-size:24px;color:var(--muted)"}," / 10")),
+      h("p",{},`Acertaste ${Z.correct} de ${QA.length} preguntas · ${Z.pts} de ${Z.max} puntos.`),
+      h("p",{class:"lead"},h("b",{},msg))),
+    Z.misses.length?h("div",{class:"section-h"},h("h2",{},"Para repasar"),h("span",{},`${Z.misses.length} tiro(s) fallado(s)`)):null,
+    Z.misses.map(q=>h("div",{class:"miss"}, h("div",{class:"qn hint"},`Jugada ${q.t}: ${TOPICS[q.t-1].name}`), h("b",{},q.q), h("div",{class:"ans"},"✓ "+ansOf(q)), h("div",{},q.why))),
+    missTopics.length?h("div",{class:"row"}, missTopics.map(t=>h("button",{class:"btn alt",type:"button",onclick:()=>go(t)},`Repasar: ${TOPICS[t-1].name}`))):null,
+    h("div",{class:"row"}, h("button",{class:"btn",type:"button",onclick:()=>go("quiz")},"Jugar otra vez"), h("button",{class:"btn alt",type:"button",onclick:()=>go("home")},"Menú"))
+  ];
+}
+
+function render(){
+  drawDots();
+  const s=S.screen;
+  const out= s==="home"?home(): s==="quiz"?quiz(): s==="results"?results(): topic(s);
+  $app.replaceChildren(...out.flat().filter(Boolean));
+}
+render();
+</script>
+
+
+<style>
+.say{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;border:2px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:4px 12px;font-weight:800;font-size:15px;min-height:38px;margin-bottom:6px;cursor:pointer}
+.say.on{background:var(--ball);color:#fff;border-color:var(--ball)}
+.say.big{font-size:17px;padding:8px 16px;min-height:46px;background:var(--navy);color:var(--navy-ink);border-color:var(--navy);margin-top:10px}
+.say.big.on{background:var(--ball);border-color:var(--ball)}
+.grid2>div>.say{margin-bottom:4px}
+</style>
+<script>
+(function(){
+  const DEF = "es"; // idioma por defecto cuando no se distingue: "es" o "en"
+  if (typeof window.speechSynthesis === "undefined") return;
+  let ES=null, EN=null;
+  function pick(){ try{ const v=speechSynthesis.getVoices();
+    ES=v.find(x=>/es[-_]MX/i.test(x.lang))||v.find(x=>/^es/i.test(x.lang))||null;
+    EN=v.find(x=>/en[-_]US/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null; }catch(e){} }
+  pick(); try{ speechSynthesis.onvoiceschanged=pick; }catch(e){}
+
+  const ESW=new Set("el la los las de del que y en es son un una unos unas con para por se su sus tu tus te lo al como más pero si no qué cuál cuando dónde porque también muy ya antes después hay ser está están acción verbo sustantivo palabra palabras significa ejemplo truco ojo mi mis le les nos esta este esto sin toca escribe ordena cuál cuáles cómo larga corta pasando decir otra otro cada todo todas todos lugar cosas cosa sí nuestro nuestra yo ella ellos usar usa dice".split(" "));
+  const ENW=new Set("the a an is are was were to of and in it you he she they i my his her when with for on at this that be have has do does can can't will what which who how why your our their from them there then because so but not like".split(" "));
+  function lang(chunk){
+    const words=chunk.toLowerCase().match(/[a-záéíóúüñ']+/g)||[];
+    if(words.length<=1 && chunk.length<=3) return DEF;
+    let es=(chunk.match(/[áéíóúñ¿¡]/gi)||[]).length*2, en=0;
+    for(const w of words){ if(ESW.has(w)) es++; if(ENW.has(w)) en++; }
+    if(es>en) return "es"; if(en>es) return "en"; return DEF;
+  }
+  function clean(t){ return t.replace(/🔊[^\n]*?(Escuchar toda la jugada|Escuchar|Detener)/g,"")
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️‍]/gu,"")
+    .replace(/[_]{2,}/g," blank ").replace(/\s+/g," ").trim(); }
+  function chunks(text){
+    const out=[];
+    text.split(/\n+/).forEach(line=>{
+      line.replace(/([.!?…:])\s+/g,"$1\u0001").split(/\u0001|\s*[·•→←↔⬅➡]\s*|[“”"«»()]/).forEach(c=>{ c=clean(c); if(c && /[a-záéíóúñ0-9]/i.test(c)) out.push(c); });
+    });
+    return out;
+  }
+  let current=null;
+  function stop(){ try{ speechSynthesis.cancel(); }catch(e){} if(current){ current.classList.remove("on"); current.textContent=current.dataset.label; current=null; } }
+  function speak(text, btn){
+    const wasMe = current===btn; stop(); if(wasMe) return;
+    const list=[]; let lastL=null;
+    for(const c of chunks(text)){ const l=lang(c);
+      if(l===lastL && list.length && list[list.length-1].length<220) list[list.length-1]+= (/[.!?…:,]$/.test(list[list.length-1])?" ":", ")+c;
+      else list.push(c); lastL=l; }
+    if(!list.length) return;
+    current=btn; btn.classList.add("on"); btn.textContent="⏹ Detener";
+    list.forEach((c,i)=>{ const u=new SpeechSynthesisUtterance(c); const l=lang(c);
+      u.lang = l==="en"?"en-US":"es-MX"; const v = l==="en"?EN:ES; if(v) u.voice=v; u.rate = l==="en"?0.85:0.95;
+      if(i===list.length-1) u.onend=u.onerror=()=>{ if(current===btn) stop(); };
+      speechSynthesis.speak(u); });
+  }
+  function mk(label, getText, big){
+    const b=document.createElement("button"); b.type="button"; b.className="say"+(big?" big":""); b.dataset.label=label; b.textContent=label;
+    b.setAttribute("aria-label","Escuchar en voz alta");
+    b.addEventListener("click",e=>{ e.stopPropagation(); speak(getText(), b); });
+    return b;
+  }
+  function qText(q){
+    const t=[q.querySelector(".qt")?.innerText||""];
+    q.querySelectorAll(".opts > .opt, .sortrow .it").forEach(o=>t.push(o.innerText));
+    const bk=q.querySelector(".sortrow .bk"); if(bk) t.push("Opciones: "+[...bk.querySelectorAll("button")].map(b=>b.innerText).join(", "));
+    return t.join("\n");
+  }
+  function decorate(){
+    const app=document.getElementById("app"); if(!app) return;
+    app.querySelectorAll(".card, .tip, .fix, .stage, .grid2 > div, .miss").forEach(c=>{
+      if(c.querySelector(":scope > .say") || c.closest(".q")) return;
+      if(c.matches(".stage") && c.closest(".card")) return;
+      c.prepend(mk("🔊 Escuchar", ()=>c.innerText));
+    });
+    app.querySelectorAll(".q").forEach(q=>{
+      if(q.querySelector(":scope > .say")) return;
+      const qt=q.querySelector(".qt"); if(qt) qt.before(mk("🔊 Escuchar", ()=>qText(q)));
+    });
+    const hero=app.querySelector("section.hero");
+    if(hero && !hero.querySelector(".say") && /^Jugada/i.test(hero.querySelector(".eyebrow")?.textContent||"")){
+      const learn=hero.nextElementSibling;
+      if(learn) hero.append(mk("🔊 Escuchar toda la jugada", ()=>hero.querySelector("h1").innerText+".\n"+learn.innerText, true));
+    }
+  }
+  new MutationObserver(()=>decorate()).observe(document.getElementById("app"),{childList:true,subtree:true});
+  decorate();
+  document.addEventListener("click",e=>{ if(e.target.closest(".dot, .play, main > .btn, .row .btn")) stop(); },true);
+})();
+</script>
+</body>
+</html>
