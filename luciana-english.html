@@ -185,6 +185,12 @@ table.conj{width:100%;border-collapse:collapse;font-size:17px}
 table.conj td{padding:8px 6px;border-bottom:1px solid var(--line)}
 table.conj td:nth-child(2){color:var(--ball-ink);font-size:19px}
 .spellmodes button{font-size:16px}
+.flash{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.fc{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface-2);border:2px solid var(--line);border-radius:14px;padding:10px 6px;min-width:0;text-align:center;color:var(--ink)}
+.fc .fe{font-size:44px;line-height:1.1}
+.fc b{font-size:17px;word-break:break-word}
+.fc span:last-child{font-size:13px;color:var(--muted)}
+.fc.on{border-color:var(--ball);background:var(--ball-soft)}
 body[data-spell="random"] .spellmodes [data-mode="random"],body[data-spell="September"] .spellmodes [data-mode="September"],body[data-spell="October"] .spellmodes [data-mode="October"],body[data-spell="all"] .spellmodes [data-mode="all"]{background:var(--ball);border-color:var(--ball);color:#fff}
 
 </style>
@@ -207,10 +213,13 @@ const WORDS = {
  October:[["afraid","con miedo"],["astronaut","astronauta"],["August","agosto"],["bored","aburrido"],["brave","valiente"],["careful","cuidadoso"],["clever","listo / inteligente"],["daughter","hija"],["glad","contento"],["happy","feliz"],["kind","amable"],["loud","ruidoso / fuerte"],["mean","malo / grosero"],["naughty","travieso"],["opposite","opuesto"],["paint","pintar / pintura"],["pause","pausa"],["rain","lluvia"],["sauce","salsa"],["serious","serio"],["snail","caracol"],["train","tren"],["unhappy","triste / infeliz"],["wait","esperar"],["worried","preocupado"]]
 };
 const ALLW = Object.values(WORDS).flat();
+const EMO = {balcony:"🏢",boat:"⛵",bucket:"🪣","bunk bed":"🛏️",countries:"🌎",cow:"🐄",fridge:"🧊",guitar:"🎸",hide:"🙈",house:"🏠",internet:"🌐",laptop:"💻",message:"💬",mouse:"🐭",mouth:"👄",movies:"🎬",oven:"🔥",please:"🙏",roof:"🛖",scooter:"🛴",shelf:"📚",shower:"🚿",them:"👥",town:"🏘️",wash:"🧼",
+ afraid:"😨",astronaut:"🧑‍🚀",August:"📅",bored:"🥱",brave:"🦸",careful:"⚠️",clever:"🧠",daughter:"👧",glad:"😊",happy:"😃",kind:"🤗",loud:"📢",mean:"😠",naughty:"😜",opposite:"↔️",paint:"🎨",pause:"⏸️",rain:"🌧️",sauce:"🥫",serious:"😐",snail:"🐌",train:"🚆",unhappy:"😢",wait:"⏳",worried:"😟"};
+const flash = list => `<div class="flash">${list.map(([w,es])=>`<button type="button" class="fc" data-w="${w}"><span class="fe">${EMO[w]||"⭐"}</span><b>${w}</b><span>${es}</span></button>`).join("")}</div>`;
 function shuf(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-const spellQ = ([w,es]) => ({type:"fill", say:w, t:3, q:`🐝 Escucha y escribe la palabra. Significa: “${es}” · empieza con “${w[0].toLowerCase()}” · ${w.replace(/ /g,"").length} letras${w.includes(" ")?" (2 palabras)":""}`, accept:[w], answer:w, why:`${w} = ${es}`});
+const spellQ = ([w,es]) => ({type:"fill", say:w, t:3, q:`${EMO[w]||"🐝"} Escucha y escribe la palabra. Significa: “${es}” · empieza con “${w[0].toLowerCase()}” · ${w.replace(/ /g,"").length} letras${w.includes(" ")?" (2 palabras)":""}`, accept:[w], answer:w, why:`${w} = ${es}`});
 const pickWords = n => shuf(ALLW).slice(0,n).map(spellQ);
-let SPELL_MODE="random";
+let SPELL_MODE="all";
 function spellSet(){ if(SPELL_MODE==="random") return pickWords(10); const src=SPELL_MODE==="all"?ALLW:WORDS[SPELL_MODE]; return shuf(src).map(spellQ); }
 
 /* ========== CONTENIDO ========== */
@@ -311,12 +320,22 @@ const TOPICS = [
   </div>
   <div class="card">
     <h3>Elige qué practicar</h3>
+    <p class="hint">Empieza con las 50. Si quieres repasar menos, elige un mes.</p>
     <div class="bk spellmodes">
-      <button type="button" data-mode="random">🎲 10 al azar</button>
       <button type="button" data-mode="September">September (25)</button>
       <button type="button" data-mode="October">October (25)</button>
       <button type="button" data-mode="all">🐝 Las 50</button>
     </div>
+  </div>
+  <div class="card">
+    <h3>🖼️ Tarjetas: September</h3>
+    <p class="hint">Toca una tarjeta para oír la palabra en inglés.</p>
+    ${flash(WORDS.September)}
+  </div>
+  <div class="card">
+    <h3>🖼️ Tarjetas: October</h3>
+    <p class="hint">Toca una tarjeta para oír la palabra en inglés.</p>
+    ${flash(WORDS.October)}
   </div>
   <div class="card">
     <h3>Palabras tramposas ⚠️</h3>
@@ -365,7 +384,7 @@ function pickEN(){ try{ const v=speechSynthesis.getVoices(); EN_VOICE=v.find(x=>
 try{ pickEN(); speechSynthesis.addEventListener&&speechSynthesis.addEventListener("voiceschanged",pickEN); }catch(e){}
 function sayEN(word){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(word); u.lang="en-US"; u.rate=0.75; if(EN_VOICE) u.voice=EN_VOICE; speechSynthesis.speak(u); }catch(e){} }
 
-document.addEventListener("click",e=>{ const b=e.target.closest(".spellmodes button"); if(!b) return;
+document.addEventListener("click",e=>{ const f=e.target.closest(".fc"); if(f){ sayEN(f.dataset.w); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),700); return; } const b=e.target.closest(".spellmodes button"); if(!b) return;
   SPELL_MODE=b.dataset.mode; document.body.setAttribute("data-spell",SPELL_MODE); render();
   setTimeout(()=>{ const hs=document.querySelectorAll(".section-h"); const t=hs[hs.length-1]; if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); },60); });
 document.body.setAttribute("data-spell",SPELL_MODE);
